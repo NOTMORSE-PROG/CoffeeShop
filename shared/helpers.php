@@ -22,6 +22,50 @@ function peso(float|string|int $amount): string
     return '₱' . number_format((float) $amount, 2);
 }
 
+/**
+ * Format a peso amount for an SMS.
+ *
+ * The peso sign is not in the GSM-7 alphabet. A single non-GSM character
+ * forces the whole message into UCS-2, which drops the per-credit limit from
+ * 160 characters to 70 and can silently double what each order costs to
+ * notify. Spelling it "PHP" keeps every message on one credit.
+ */
+function peso_sms(float|string|int $amount): string
+{
+    return 'PHP ' . number_format((float) $amount, 2);
+}
+
+/**
+ * Reduce text to the GSM-7 range so a message stays one credit.
+ * Replaces the characters that realistically show up in a name or a drink.
+ */
+function gsm7_safe(string $text): string
+{
+    $replacements = [
+        "\u{20B1}" => 'PHP ',   // peso sign
+        "\u{2018}" => "'",      // curly quotes
+        "\u{2019}" => "'",
+        "\u{201C}" => '"',
+        "\u{201D}" => '"',
+        "\u{2013}" => '-',      // en dash
+        "\u{2014}" => '-',      // em dash
+        "\u{2026}" => '...',    // ellipsis
+        "\u{00A0}" => ' ',      // non-breaking space
+    ];
+
+    $text = strtr($text, $replacements);
+
+    // Anything still outside printable ASCII is transliterated where
+    // possible and dropped otherwise.
+    $converted = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
+
+    if ($converted !== false) {
+        $text = $converted;
+    }
+
+    return preg_replace('/[^\x20-\x7E\r\n]/', '', $text) ?? $text;
+}
+
 /** Send a redirect and stop. */
 function redirect(string $url): never
 {
@@ -160,9 +204,18 @@ const ORDER_STATUSES = [
     'cancelled'        => 'Cancelled',
 ];
 
-/** Human label for a status value. */
-function status_label(string $status): string
+/**
+ * Human label for a status value.
+ *
+ * `ready` reads differently depending on fulfilment: a pickup order is ready
+ * for pickup, a delivery order is simply ready to go out.
+ */
+function status_label(string $status, ?string $orderType = null): string
 {
+    if ($status === 'ready' && $orderType === 'delivery') {
+        return 'Ready to Send';
+    }
+
     return ORDER_STATUSES[$status] ?? ucfirst(str_replace('_', ' ', $status));
 }
 

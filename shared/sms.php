@@ -29,10 +29,10 @@ function sms_message_for(string $status, array $order): string
 {
     $ref   = $order['order_ref'];
     $name  = explode(' ', trim((string) $order['customer_name']))[0] ?: 'there';
-    $total = peso($order['total']);
+    $total = peso_sms($order['total']);
     $shop  = (string) setting('shop_name', 'Our Coffee Shop');
 
-    return match ($status) {
+    $message = match ($status) {
         'pending' => sprintf(
             '%s: Hi %s, we got your order %s. Total %s. We will text you when it is being prepared.',
             $shop, $name, $ref, $total
@@ -41,10 +41,9 @@ function sms_message_for(string $status, array $order): string
             '%s: Your order %s is being prepared now. We will text you again once it is ready.',
             $shop, $ref
         ),
-        'ready' => sprintf(
-            '%s: Your order %s is ready for pickup. See you at the shop.',
-            $shop, $ref
-        ),
+        'ready' => $order['order_type'] === 'delivery'
+            ? sprintf('%s: Your order %s is ready and will be sent out shortly.', $shop, $ref)
+            : sprintf('%s: Your order %s is ready for pickup. See you at the shop.', $shop, $ref),
         'out_for_delivery' => sprintf(
             '%s: Your order %s is on its way to you. Please keep your phone nearby.',
             $shop, $ref
@@ -57,8 +56,15 @@ function sms_message_for(string $status, array $order): string
             '%s: Your order %s was cancelled. Please contact the shop if this was not expected.',
             $shop, $ref
         ),
-        default => sprintf('%s: Your order %s is now %s.', $shop, $ref, status_label($status)),
+        default => sprintf('%s: Your order %s is now %s.', $shop, $ref, status_label($status, $order['order_type'] ?? null)),
     };
+
+    // Strip anything outside GSM-7 and keep the message to a single credit.
+    // A shop name or a customer name with an accent would otherwise push the
+    // whole message into UCS-2, where one credit covers only 70 characters.
+    $message = gsm7_safe($message);
+
+    return mb_strlen($message) > 160 ? mb_substr($message, 0, 157) . '...' : $message;
 }
 
 /** Whether the owner has SMS switched on for this particular status. */

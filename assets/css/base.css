@@ -9,6 +9,13 @@
   box-sizing: border-box;
 }
 
+/* The hidden attribute must always win. A component rule such as
+   `.panel { display: flex }` otherwise overrides the user-agent style for
+   [hidden], and anything toggled from JavaScript stays visible. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
@@ -201,4 +208,36 @@ code, kbd, pre { font-family: var(--font-mono); font-size: 0.9em; }
 @media print {
   .no-print { display: none !important; }
   body { background: #fff; }
+}
+
+/* --- Spacing and sizing utilities -----------------------------------------
+   The content security policy blocks inline style attributes, so every
+   one-off adjustment lives here as a class instead. */
+
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-5 { margin-top: var(--space-5); }
+.mt-6 { margin-top: var(--space-6); }
+.mt-auto { margin-top: auto; }
+
+.pb-6 { padding-bottom: var(--space-6); }
+.p-2 { padding: var(--space-2); }
+
+.mx-auto { margin-inline: auto; }
+
+.gap-5 { gap: var(--space-5); }
+
+.items-start { align-items: flex-start; }
+
+.h-title { font-size: var(--text-xl); }
+.h-page  { font-size: var(--text-4xl); }
+
+.w-qty { width: 5.2rem; }
+
+/* A summary row that starts a totals block. */
+.row-divider {
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-2);
 }

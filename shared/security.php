@@ -154,12 +154,13 @@ function require_post_with_csrf(): void
 
     if (!csrf_valid($_POST['_csrf'] ?? null)) {
         write_log('security.log', sprintf(
-            'CSRF rejected: ip=%s uri=%s',
+            'CSRF rejected: ip=%s uri=%s session=%s',
             client_ip(),
-            $_SERVER['REQUEST_URI'] ?? '?'
+            $_SERVER['REQUEST_URI'] ?? '?',
+            session_status() === PHP_SESSION_ACTIVE ? 'active' : 'missing'
         ));
 
-        http_response_code(419);
+        http_response_code(403);
         exit('Your session expired or the form was not submitted correctly. Please go back and try again.');
     }
 }
