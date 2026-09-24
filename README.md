@@ -148,6 +148,38 @@ under Settings.
 
 ---
 
+## Admin accounts
+
+The shop starts with one owner account. If a helper works the counter, give them their own
+sign-in under **Accounts** rather than sharing the owner password, because the audit trail
+records whoever is signed in.
+
+| Role | Can reach |
+|---|---|
+| Owner | Everything, including Settings and Accounts |
+| Staff | Everything except Settings and Accounts |
+
+A few things are enforced rather than left to care:
+
+- You cannot deactivate the account you are currently signed in with.
+- The last active owner cannot be demoted or deactivated, so the shop can never lock itself out.
+- Resetting someone's password always forces them to set a new one at their next sign-in.
+- Accounts are deactivated, never deleted, so past audit entries keep naming their author.
+
+## Customising drinks
+
+**Customisation** manages the choices a customer makes before adding a drink to the cart:
+size, sugar level, add-ons, and anything else you want to offer.
+
+- A group is either **pick one** (radio buttons, exactly one default) or **pick any** (checkboxes).
+- Each choice can carry an extra charge, which is added to the drink's price.
+- The bottom of the page controls which drinks offer that group.
+
+Changing a price or a name here only affects future orders. Every past order keeps its own
+copy of what was chosen and what it cost, so an old receipt never changes underneath anyone.
+
+---
+
 ## Security
 
 - Passwords hashed with bcrypt, rehashed automatically when PHP's default cost moves.
