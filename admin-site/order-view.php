@@ -47,6 +47,39 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         } else {
             flash('error', (string) $result['error']);
         }
+    } elseif ($action === 'resend_sms') {
+        // For when a customer says the text never arrived. `force` bypasses
+        // the per-status switch, because the owner is asking for this one
+        // deliberately and it costs a credit either way.
+        $resendOrder = find_order($orderId);
+
+        if ($resendOrder === null) {
+            flash('error', 'That order no longer exists.');
+        } else {
+            $status = (string) $resendOrder['status'];
+            $logId  = send_order_sms($resendOrder, $status, true);
+            $sent   = $logId === null
+                ? null
+                : db_one('SELECT status, error_message FROM sms_log WHERE id = ?', [$logId]);
+
+            audit(
+                'sms.resent',
+                'order',
+                (string) $resendOrder['order_ref'],
+                sprintf('Resent the %s notification for %s',
+                    status_label($status, (string) $resendOrder['order_type']),
+                    (string) $resendOrder['order_ref']),
+                null,
+                ['trigger_status' => $status, 'result' => $sent['status'] ?? 'unknown'],
+                (int) $admin['id']
+            );
+
+            if (($sent['status'] ?? '') === 'sent') {
+                flash('success', 'Notification sent again to ' . format_ph_mobile((string) $resendOrder['customer_phone']) . '.');
+            } else {
+                flash('error', 'The message could not be sent. ' . (string) ($sent['error_message'] ?? ''));
+            }
+        }
     }
 
     redirect('order-view.php?id=' . $orderId);
@@ -347,7 +380,20 @@ admin_header(
   <section class="card order-grid-wide">
     <div class="card-header">
       <h2>SMS history</h2>
-      <span class="small subtle"><?= count($smsHistory) ?> message<?= count($smsHistory) === 1 ? '' : 's' ?></span>
+      <div class="row">
+        <span class="small subtle"><?= count($smsHistory) ?> message<?= count($smsHistory) === 1 ? '' : 's' ?></span>
+        <?php if (!in_array($status, ['completed', 'cancelled'], true) || $smsHistory !== []): ?>
+          <form method="post" action="<?= e(admin_url('order-view.php')) ?>">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="resend_sms">
+            <input type="hidden" name="id" value="<?= (int) $order['id'] ?>">
+            <button type="submit" class="btn btn-sm btn-secondary" data-busy-label="Sending"
+                    data-confirm="Send the &quot;<?= e(status_label($status, (string) $order['order_type'])) ?>&quot; message again? This uses one SMS credit.">
+              <?= admin_icon('icon-refresh', 'icon-sm') ?> Resend current status
+            </button>
+          </form>
+        <?php endif; ?>
+      </div>
     </div>
 
     <?php if ($smsHistory === []): ?>

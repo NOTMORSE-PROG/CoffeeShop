@@ -602,3 +602,66 @@
   .admin-shell { grid-template-columns: minmax(0, 1fr); }
   .admin-content { padding: 0; max-width: none; }
 }
+
+/* Inventory: the add/edit and adjust panels stack in the right-hand column
+   rather than wrapping back underneath the stock table. */
+.inventory-forms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/* Customisation: the grid of drinks a given option group applies to. */
+.assign-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-2);
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+}
+
+.assign-heading {
+  grid-column: 1 / -1;
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.assign-heading:first-child { margin-top: 0; }
+
+.assign-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.assign-item:hover { background: var(--cream-100); }
+.assign-item input { accent-color: var(--accent); flex: none; }
+
+/* Accounts: the table carries five columns, so it needs more room than the
+   inventory layout gives. */
+.users-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 1180px) {
+  .users-grid { grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); }
+}
+
+/* Keep a person's name on one line where there is room for it. */
+.users-grid .table td .bold { white-space: nowrap; }

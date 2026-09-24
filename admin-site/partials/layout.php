@@ -127,12 +127,14 @@ function admin_nav_items(): array
         ['page' => 'index.php',     'label' => 'Dashboard',   'icon' => 'icon-dashboard'],
         ['page' => 'orders.php',    'label' => 'Orders',      'icon' => 'icon-receipt'],
         ['page' => 'menu.php',      'label' => 'Menu',        'icon' => 'icon-cup'],
+        ['page' => 'options.php',   'label' => 'Customisation', 'icon' => 'icon-settings'],
         ['page' => 'inventory.php', 'label' => 'Inventory',   'icon' => 'icon-box'],
         ['page' => 'analytics.php', 'label' => 'Analytics',   'icon' => 'icon-chart'],
         ['page' => 'audit.php',     'label' => 'Audit Trail', 'icon' => 'icon-shield'],
     ];
 
     if (is_owner()) {
+        $items[] = ['page' => 'users.php',    'label' => 'Accounts', 'icon' => 'icon-user'];
         $items[] = ['page' => 'settings.php', 'label' => 'Settings', 'icon' => 'icon-settings'];
     }
 

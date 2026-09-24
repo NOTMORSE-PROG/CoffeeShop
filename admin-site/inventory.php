@@ -20,7 +20,73 @@ $admin = current_admin();
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_post_with_csrf();
 
-    if (post_string('action') === 'adjust') {
+    $action = post_string('action');
+
+    if ($action === 'item_save') {
+        $itemId  = (int) ($_POST['item_id'] ?? 0);
+        $name    = clean_text(post_string('name'), 120);
+        $unit    = clean_text(post_string('unit'), 24);
+        $reorder = max(0.0, (float) str_replace(',', '', post_string('reorder_level', '0')));
+        $active  = isset($_POST['is_active']) ? 1 : 0;
+
+        // Only set on create. Afterwards stock moves through adjustments, so
+        // that every change has a reason attached to it in the audit trail.
+        $opening = max(0.0, (float) str_replace(',', '', post_string('stock_qty', '0')));
+
+        $existing = $itemId > 0
+            ? db_one('SELECT * FROM inventory_items WHERE id = ? LIMIT 1', [$itemId])
+            : null;
+
+        $clash = db_value(
+            'SELECT id FROM inventory_items WHERE name = ? AND id <> ?',
+            [$name, $itemId]
+        );
+
+        if ($name === '') {
+            flash('error', 'Give the item a name.');
+        } elseif ($unit === '') {
+            flash('error', 'Give the unit, for example g, ml or pc.');
+        } elseif ($clash !== null) {
+            flash('error', 'There is already an inventory item called ' . $name . '.');
+        } elseif ($itemId > 0 && $existing === null) {
+            flash('error', 'That inventory item no longer exists.');
+        } elseif ($existing !== null) {
+            db_query(
+                'UPDATE inventory_items SET name = ?, unit = ?, reorder_level = ?, is_active = ? WHERE id = ?',
+                [$name, $unit, $reorder, $active, $itemId]
+            );
+
+            [$old, $new] = audit_diff(
+                $existing,
+                ['name' => $name, 'unit' => $unit, 'reorder_level' => $reorder, 'is_active' => $active],
+                ['name', 'unit', 'reorder_level', 'is_active']
+            );
+
+            audit('inventory.updated', 'inventory_item', $itemId,
+                'Edited ' . $name, $old, $new, (int) $admin['id']);
+
+            flash('success', $name . ' updated.');
+        } else {
+            $newId = db_insert(
+                'INSERT INTO inventory_items (name, unit, stock_qty, reorder_level, is_active)
+                 VALUES (?, ?, ?, ?, ?)',
+                [$name, $unit, $opening, $reorder, $active]
+            );
+
+            audit('inventory.created', 'inventory_item', $newId,
+                sprintf('Added %s, opening stock %s %s', $name, rtrim(rtrim(number_format($opening, 3, '.', ''), '0'), '.'), $unit),
+                null,
+                ['name' => $name, 'unit' => $unit, 'stock_qty' => $opening, 'reorder_level' => $reorder],
+                (int) $admin['id']
+            );
+
+            flash('success', $name . ' added to the inventory.');
+        }
+
+        redirect('inventory.php');
+    }
+
+    if ($action === 'adjust') {
         $itemId = (int) ($_POST['item_id'] ?? 0);
         $delta  = (float) str_replace(',', '', post_string('delta', '0'));
         $reason = clean_text(post_string('reason'), 255);
@@ -80,6 +146,10 @@ foreach ($items as $item) {
 }
 
 $selectedId = get_int('item');
+$editId     = get_int('edit');
+$editItem   = $editId > 0
+    ? db_one('SELECT * FROM inventory_items WHERE id = ? LIMIT 1', [$editId])
+    : null;
 
 /** Trim the trailing zeros off a DECIMAL so 12.000 reads as 12. */
 function qty(float|string $value): string
@@ -116,7 +186,7 @@ admin_header('Inventory', $lowCount === 0
       <div class="empty">
         <?= admin_icon('icon-box', 'empty-icon') ?>
         <h3>No inventory items</h3>
-        <p class="mb-0">Import the seed data, or add items to the database.</p>
+        <p class="mb-0">Add your first item using the form beside this list.</p>
       </div>
     <?php else: ?>
       <div class="table-wrap table-flush">
@@ -151,9 +221,11 @@ admin_header('Inventory', $lowCount === 0
                 <td class="small subtle nowrap">
                   <?= e(date('j M, g:i A', (int) strtotime((string) $item['updated_at']))) ?>
                 </td>
-                <td class="right">
+                <td class="right nowrap">
                   <a class="btn btn-sm btn-secondary"
                      href="<?= e(admin_url('inventory.php')) ?>?item=<?= (int) $item['id'] ?>#adjust-form">Adjust</a>
+                  <a class="btn btn-sm btn-ghost"
+                     href="<?= e(admin_url('inventory.php')) ?>?edit=<?= (int) $item['id'] ?>#item-form">Edit</a>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -161,6 +233,86 @@ admin_header('Inventory', $lowCount === 0
         </table>
       </div>
     <?php endif; ?>
+  </section>
+
+  <div class="inventory-forms">
+
+  <section class="card" id="item-form">
+    <div class="card-header">
+      <h2><?= $editItem === null ? 'Add an item' : 'Edit item' ?></h2>
+      <?php if ($editItem !== null): ?>
+        <a class="btn btn-sm btn-ghost" href="<?= e(admin_url('inventory.php')) ?>#item-form">Cancel</a>
+      <?php endif; ?>
+    </div>
+    <div class="card-body">
+      <form method="post" action="<?= e(admin_url('inventory.php')) ?>">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="item_save">
+        <input type="hidden" name="item_id" value="<?= (int) ($editItem['id'] ?? 0) ?>">
+
+        <div class="field">
+          <label class="label" for="item_name">Name <span class="req">*</span></label>
+          <input class="input" type="text" id="item_name" name="name" maxlength="120" required
+                 value="<?= e((string) ($editItem['name'] ?? '')) ?>"
+                 placeholder="Espresso Beans">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label" for="item_unit">Unit <span class="req">*</span></label>
+            <input class="input" type="text" id="item_unit" name="unit" maxlength="24" required
+                   value="<?= e((string) ($editItem['unit'] ?? '')) ?>"
+                   placeholder="g, ml, pc">
+          </div>
+
+          <div class="field">
+            <label class="label" for="item_reorder">Reorder level</label>
+            <input class="input tabular" type="number" id="item_reorder" name="reorder_level"
+                   step="0.001" min="0"
+                   value="<?= e(qty($editItem['reorder_level'] ?? 0)) ?>">
+            <p class="hint">Flagged as low at or below this.</p>
+          </div>
+        </div>
+
+        <?php if ($editItem === null): ?>
+          <div class="field">
+            <label class="label" for="item_stock">Opening stock</label>
+            <input class="input tabular" type="number" id="item_stock" name="stock_qty"
+                   step="0.001" min="0" value="0">
+            <p class="hint">
+              Set once, here. After this, stock only moves through adjustments and orders,
+              so every change carries a reason.
+            </p>
+          </div>
+        <?php else: ?>
+          <div class="field">
+            <span class="label">In stock</span>
+            <p class="mb-0 tabular">
+              <span class="bold"><?= e(qty($editItem['stock_qty'])) ?></span>
+              <span class="subtle small"><?= e((string) $editItem['unit']) ?></span>
+            </p>
+            <p class="hint">
+              Change this with <a href="<?= e(admin_url('inventory.php')) ?>?item=<?= (int) $editItem['id'] ?>#adjust-form">an adjustment</a>,
+              so the reason is recorded.
+            </p>
+          </div>
+        <?php endif; ?>
+
+        <label class="choice">
+          <input type="checkbox" name="is_active" value="1"
+                 <?= (int) ($editItem['is_active'] ?? 1) === 1 ? 'checked' : '' ?>>
+          <span>
+            <span class="choice-title">Active</span>
+            <span class="choice-note">Inactive items are ignored by the low-stock warning.</span>
+          </span>
+        </label>
+
+        <button type="submit" class="btn btn-block mt-4" data-busy-label="Saving">
+          <?= admin_icon($editItem === null ? 'icon-plus' : 'icon-check', 'icon-sm') ?>
+          <?= $editItem === null ? 'Add item' : 'Save changes' ?>
+        </button>
+      </form>
+    </div>
   </section>
 
   <section class="card" id="adjust-form">
@@ -212,6 +364,8 @@ admin_header('Inventory', $lowCount === 0
       </p>
     </div>
   </section>
+
+  </div>
 
 </div>
 
