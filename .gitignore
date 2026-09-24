@@ -88,3 +88,6 @@ Desktop.ini
 *.log
 *.tmp
 .scratch/
+
+# Playwright MCP output
+.playwright-mcp/
