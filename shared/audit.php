@@ -19,6 +19,7 @@ const AUDIT_ACTIONS = [
     'auth.logout'             => 'Signed out',
     'auth.password_changed'   => 'Changed password',
     'auth.locked_out'         => 'Account locked after repeated failures',
+    'order.placed'            => 'Order placed by a customer',
     'order.status_changed'    => 'Changed order status',
     'order.payment_verified'  => 'Marked payment as received',
     'order.cancelled'         => 'Cancelled an order',

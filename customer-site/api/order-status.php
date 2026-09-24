@@ -22,9 +22,16 @@ if ($ref === '' || $phone === '') {
     json_response(['error' => 'Missing reference or number.'], 400);
 }
 
+// The tracking page polls this, so the allowance is higher than the form's,
+// but it still cannot be used to walk through order references.
+if (throttle_exceeded('order_status_api', 120, 15)) {
+    json_response(['error' => 'Too many requests.'], 429);
+}
+
 $order = find_order_for_customer($ref, $phone);
 
 if ($order === null) {
+    throttle_record('order_status_api', false);
     json_response(['error' => 'Not found.'], 404);
 }
 

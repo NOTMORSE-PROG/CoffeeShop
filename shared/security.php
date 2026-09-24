@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/db.php';
 
 /**
  * Whether the current request arrived over HTTPS.
@@ -163,6 +164,43 @@ function require_post_with_csrf(): void
         http_response_code(403);
         exit('Your session expired or the form was not submitted correctly. Please go back and try again.');
     }
+}
+
+// ---------------------------------------------------------------------------
+// Generic throttling
+// ---------------------------------------------------------------------------
+
+/**
+ * Count recent failed attempts at an action from this IP.
+ *
+ * Reuses the login_attempts table, keyed by an action name rather than a real
+ * username, so there is one place to look when investigating abuse.
+ */
+function throttle_count(string $action, int $windowMinutes): int
+{
+    $since = date('Y-m-d H:i:s', time() - ($windowMinutes * 60));
+
+    return (int) db_value(
+        'SELECT COUNT(*) FROM login_attempts
+         WHERE username = ? AND ip_address = ? AND successful = 0 AND created_at > ?',
+        ['@' . $action, client_ip(), $since]
+    );
+}
+
+/** Record one attempt at a throttled action. */
+function throttle_record(string $action, bool $successful): void
+{
+    db_query(
+        'INSERT INTO login_attempts (username, ip_address, successful, user_agent)
+         VALUES (?, ?, ?, ?)',
+        ['@' . $action, client_ip(), $successful ? 1 : 0, client_user_agent()]
+    );
+}
+
+/** Whether this IP has run out of attempts at an action. */
+function throttle_exceeded(string $action, int $max, int $windowMinutes): bool
+{
+    return throttle_count($action, $windowMinutes) >= $max;
 }
 
 // ---------------------------------------------------------------------------

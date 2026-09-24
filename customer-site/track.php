@@ -25,8 +25,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     if ($ref === '' || $phone === '') {
         $error = 'Please give both your order reference and the mobile number you used.';
+    } elseif (throttle_exceeded('order_lookup', 10, 15)) {
+        // A reference carries only four digits of entropy per day, so without
+        // this a known mobile number could be paired with a guessed reference.
+        $error = 'Too many lookups from this connection. Please wait a few minutes and try again.';
     } else {
         $order = find_order_for_customer($ref, $phone);
+
+        throttle_record('order_lookup', $order !== null);
 
         if ($order === null) {
             // Deliberately vague: this must not confirm whether a reference exists.
