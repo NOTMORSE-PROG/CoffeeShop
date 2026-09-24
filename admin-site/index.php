@@ -24,12 +24,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     $note = $newStatus === 'cancelled' ? 'Cancelled from the order queue' : null;
 
+    // Read the fulfilment type before the change, so the confirmation message
+    // says "Ready to Send" for a delivery rather than "Ready for Pickup".
+    $orderType = (string) (db_value(
+        'SELECT order_type FROM orders WHERE id = ?',
+        [$orderId]
+    ) ?? 'pickup');
+
     // change_order_status() checks the transition, moves stock, writes the
     // history row, sends the SMS and writes the audit entry.
     $result = change_order_status($orderId, $newStatus, (int) $admin['id'], $note);
 
     if ($result['ok']) {
-        flash('success', 'Order moved to ' . status_label($newStatus) . '.');
+        flash('success', 'Order moved to ' . status_label($newStatus, $orderType) . '.');
     } else {
         flash('error', (string) $result['error']);
     }
@@ -42,7 +49,7 @@ $queue = order_queue();
 
 admin_head('Dashboard');
 admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 18 ? 'afternoon' : 'evening'))
-    . ', ' . explode(' ', (string) $admin['full_name'])[0] . '.');
+    . ', ' . (string) $admin['full_name'] . '.');
 ?>
 
 <section class="stat-grid" aria-label="Today at a glance">
@@ -88,7 +95,7 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
           <div class="queue-body">
             <div class="queue-head">
               <a class="queue-ref" href="<?= e($row['view_url']) ?>"><?= e($row['order_ref']) ?></a>
-              <?= status_badge($row['status']) ?>
+              <?= status_badge($row['status'], $row['order_type']) ?>
               <?= payment_badge($row['payment_status']) ?>
             </div>
             <p class="queue-customer"><?= e($row['customer_name']) ?> &middot; <?= e($row['customer_phone']) ?></p>

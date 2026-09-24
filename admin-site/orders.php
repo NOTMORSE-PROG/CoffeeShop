@@ -221,7 +221,7 @@ admin_header('Orders', $totalOrders === 1 ? '1 order found.' : number_format($to
               <?= payment_badge((string) $order['payment_status']) ?>
               <span class="tiny subtle"><?= $order['payment_method'] === 'gcash' ? 'GCash' : 'Cash' ?></span>
             </td>
-            <td><?= status_badge((string) $order['status']) ?></td>
+            <td><?= status_badge((string) $order['status'], (string) $order['order_type']) ?></td>
             <td class="right">
               <a class="btn btn-sm btn-secondary"
                  href="<?= e(admin_url('order-view.php')) ?>?id=<?= (int) $order['id'] ?>">Open</a>

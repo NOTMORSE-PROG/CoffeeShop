@@ -47,7 +47,7 @@ function queue_row(array $order): array
 
     $next = [];
     foreach (allowed_next_statuses($status, $type) as $candidate) {
-        $next[] = ['status' => $candidate, 'label' => status_label($candidate)];
+        $next[] = ['status' => $candidate, 'label' => status_label($candidate, $type)];
     }
 
     return [
@@ -56,7 +56,7 @@ function queue_row(array $order): array
         'customer_name'  => (string) $order['customer_name'],
         'customer_phone' => format_ph_mobile((string) $order['customer_phone']),
         'status'         => $status,
-        'status_label'   => status_label($status),
+        'status_label'   => status_label($status, $type),
         'order_type'     => $type,
         'type_label'     => $type === 'delivery' ? 'Delivery' : 'Pickup',
         'payment_method' => (string) $order['payment_method'],

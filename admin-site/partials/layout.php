@@ -84,9 +84,9 @@ function admin_icon(string $name, string $class = 'icon'): string
 }
 
 /** A status pill using the shared badge classes. */
-function status_badge(string $status): string
+function status_badge(string $status, ?string $orderType = null): string
 {
-    return '<span class="badge badge-' . e($status) . '">' . e(status_label($status)) . '</span>';
+    return '<span class="badge badge-' . e($status) . '">' . e(status_label($status, $orderType)) . '</span>';
 }
 
 /** A payment pill using the shared badge classes. */

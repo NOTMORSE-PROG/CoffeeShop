@@ -89,7 +89,7 @@ foreach ($orders as $order) {
         $order['payment_method'] === 'gcash' ? 'GCash' : 'Cash',
         $order['payment_status'] === 'paid' ? 'Paid' : 'Unpaid',
         csv_cell((string) ($order['payment_reference'] ?? '')),
-        status_label((string) $order['status']),
+        status_label((string) $order['status'], (string) $order['order_type']),
         number_format((float) $order['subtotal'], 2, '.', ''),
         number_format((float) $order['delivery_fee'], 2, '.', ''),
         number_format((float) $order['total'], 2, '.', ''),

@@ -137,8 +137,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $wanted = [];
 
     foreach ($allKeys as $key) {
+        // A key the form did not carry is left exactly as it is. Booleans
+        // always arrive, because each checkbox has a hidden 0 in front of it.
+        if (!array_key_exists($key, $posted)) {
+            continue;
+        }
+
         $type = setting_field_type($key);
-        $raw  = is_string($posted[$key] ?? null) ? (string) $posted[$key] : '';
+        $raw  = is_string($posted[$key]) ? (string) $posted[$key] : '';
 
         if ($type === 'bool') {
             $wanted[$key] = $raw === '1' ? '1' : '0';

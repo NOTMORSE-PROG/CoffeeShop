@@ -33,7 +33,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         );
 
         if ($result['ok']) {
-            flash('success', 'Order moved to ' . status_label($newStatus) . '.');
+            flash('success', 'Order moved to ' . status_label($newStatus, (string) $order['order_type']) . '.');
         } else {
             flash('error', (string) $result['error']);
         }
@@ -105,7 +105,7 @@ admin_header(
   <section class="card">
     <div class="card-header">
       <h2>Items</h2>
-      <?= status_badge($status) ?>
+      <?= status_badge($status, (string) $order['order_type']) ?>
     </div>
 
     <div class="table-wrap table-flush">
@@ -270,7 +270,7 @@ admin_header(
     <div class="card-body">
       <?php if ($nextStates === []): ?>
         <p class="small subtle mb-0">
-          This order is <?= e(status_label($status)) ?>. There is nothing further to change.
+          This order is <?= e(status_label($status, (string) $order['order_type'])) ?>. There is nothing further to change.
         </p>
       <?php else: ?>
         <form method="post" action="<?= e(admin_url('order-view.php')) ?>" class="stack">
@@ -284,7 +284,7 @@ admin_header(
                 <input type="radio" name="status" value="<?= e($candidate) ?>"
                        <?= $index === 0 ? 'checked' : '' ?> required>
                 <span>
-                  <span class="choice-title"><?= e(status_label($candidate)) ?></span>
+                  <span class="choice-title"><?= e(status_label($candidate, (string) $order['order_type'])) ?></span>
                   <span class="choice-note">
                     <?php if ($candidate === 'preparing'): ?>
                       Accepts the order and takes the ingredients off stock.
@@ -328,7 +328,7 @@ admin_header(
           <li class="step <?= $variant ?>">
             <span class="step-dot"><?= admin_icon($to === 'cancelled' ? 'icon-x' : 'icon-check', 'icon-sm') ?></span>
             <span class="grow">
-              <p class="step-title"><?= e(status_label($to)) ?></p>
+              <p class="step-title"><?= e(status_label($to, (string) $order['order_type'])) ?></p>
               <p class="step-note">
                 <?= e(date('j M Y, g:i A', (int) strtotime((string) $entry['created_at']))) ?>
                 &middot; <?= e((string) ($entry['changed_by_name'] ?? 'System')) ?>
