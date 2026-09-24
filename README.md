@@ -181,6 +181,25 @@ docs/            Apache config and developer notes
 
 ---
 
+## Demo data
+
+Three sample orders ship with the working copy so the dashboard and the analytics charts have
+something to render while you are setting up. They are obvious placeholders: Andrea Santos,
+Miguel Reyes and Joy Dela Cruz.
+
+Clear them before the shop goes live, or before a defence if you would rather present with
+your own test orders:
+
+```sql
+DELETE FROM orders    WHERE order_ref LIKE 'ORD-%-90__';
+DELETE FROM customers WHERE phone IN ('639171234567', '639189876543', '639225554433');
+```
+
+Audit rows are deliberately left alone. The audit trail is append-only by design, and deleting
+from it would defeat the point of having one.
+
+---
+
 ## Troubleshooting
 
 **"The system is temporarily unavailable."**
