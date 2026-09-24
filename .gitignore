@@ -57,8 +57,10 @@ ouR-COFFEE-SSHOP.pdf
 *_Feedback.*
 *Minutes*
 
-# PHP
-vendor/
+# PHP - Composer's own vendor directory only, at the project root.
+# assets/vendor/ holds Chart.js and MUST be committed, otherwise the analytics
+# page has no charts for anyone who clones this repo.
+/vendor/
 composer.lock
 
 # Runtime
