@@ -1,0 +1,1 @@
+<?php echo "boot ok, php " . PHP_VERSION;

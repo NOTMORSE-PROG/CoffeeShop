@@ -1,0 +1,90 @@
+# ---------------------------------------------------------------
+# Our Coffee Shop - Web-Based Ordering System with SMS Notification
+# ---------------------------------------------------------------
+
+# Internal dev / agent files - local only, never pushed
+LOGGING.md
+CLAUDE.md
+AGENTS.md
+.claude/
+.cursor/
+.github/copilot-instructions.md
+docs/dev-notes/
+docs/internal/
+TODO.md
+SCRATCH.md
+*.notes.md
+
+# Secrets and environment
+.env
+.env.*
+!.env.example
+shared/config.local.php
+
+# ---------------------------------------------------------------
+# INTERNAL / PRIVATE - never commit. This GitHub remote is PUBLIC.
+# ---------------------------------------------------------------
+
+# Anything named internal or private, anywhere in the tree
+*internal*
+*INTERNAL*
+*private*
+*PRIVATE*
+*confidential*
+internal/
+docs/internal/
+notes/
+
+# Meeting recordings and call captures
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.webm
+*.wav
+*.m4a
+
+# Client documents, meeting minutes, contracts, review notes
+Minutes_of_Meeting_*
+Review_Findings_and_Verdicts.md
+Our_Coffee_Shop_Documentation_Feedback.*
+ouR-COFFEE-SSHOP.pdf
+*Contract*
+*contract*
+*Invoice*
+*invoice*
+*Receipt*
+*_Feedback.*
+*Minutes*
+
+# PHP
+vendor/
+composer.lock
+
+# Runtime
+storage/logs/*.log
+storage/cache/*
+storage/sessions/*
+!storage/**/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# Node (tooling only)
+node_modules/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build/scratch
+*.log
+*.tmp
+.scratch/
