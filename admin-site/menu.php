@@ -438,23 +438,64 @@ $categories = db_all(
      FROM categories c ORDER BY c.sort_order ASC, c.name ASC'
 );
 
+// --- Filters ---------------------------------------------------------------
 $categoryFilter = get_int('category');
+$search         = get_string('q');
+$stateFilter    = get_string('state');   // '', 'on', 'off', 'featured'
 
 $productParams = [];
-$productWhere  = '';
+$conditions    = [];
 
 if ($categoryFilter > 0) {
-    $productWhere  = ' WHERE p.category_id = ?';
-    $productParams = [$categoryFilter];
+    $conditions[]    = 'p.category_id = ?';
+    $productParams[] = $categoryFilter;
 }
+
+if ($search !== '') {
+    $conditions[]    = '(p.name LIKE ? OR p.description LIKE ?)';
+    $productParams[] = '%' . $search . '%';
+    $productParams[] = '%' . $search . '%';
+}
+
+if ($stateFilter === 'on') {
+    $conditions[] = 'p.is_available = 1';
+} elseif ($stateFilter === 'off') {
+    $conditions[] = 'p.is_available = 0';
+} elseif ($stateFilter === 'featured') {
+    $conditions[] = 'p.is_featured = 1';
+}
+
+$productWhere = $conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions);
+
+// --- Pagination -------------------------------------------------------------
+const PER_PAGE = 10;
+
+$totalProducts = (int) db_value(
+    'SELECT COUNT(*) FROM products p JOIN categories c ON c.id = p.category_id' . $productWhere,
+    $productParams
+);
+
+$totalPages = max(1, (int) ceil($totalProducts / PER_PAGE));
+$page       = max(1, min($totalPages, get_int('page', 1)));
+$offset     = ($page - 1) * PER_PAGE;
 
 $products = db_all(
     'SELECT p.*, c.name AS category_name
      FROM products p
      JOIN categories c ON c.id = p.category_id' . $productWhere . '
-     ORDER BY c.sort_order ASC, c.name ASC, p.sort_order ASC, p.name ASC',
+     ORDER BY c.sort_order ASC, c.name ASC, p.sort_order ASC, p.name ASC
+     LIMIT ' . PER_PAGE . ' OFFSET ' . $offset,
     $productParams
 );
+
+/** The current filters, for building links that keep them. */
+$filterQuery = array_filter([
+    'category' => $categoryFilter > 0 ? $categoryFilter : null,
+    'q'        => $search !== '' ? $search : null,
+    'state'    => $stateFilter !== '' ? $stateFilter : null,
+]);
+
+$hasFilters = $filterQuery !== [];
 
 $editCategory = null;
 if (get_int('edit_category') > 0) {
@@ -467,7 +508,7 @@ if (get_int('edit_product') > 0) {
 }
 
 admin_head('Menu');
-admin_header('Menu', count($categories) . ' categories, ' . count($products) . ' items.');
+admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' items.');
 ?>
 
 <div class="menu-grid">
@@ -483,56 +524,48 @@ admin_header('Menu', count($categories) . ' categories, ' . count($products) . '
         <p class="mb-0">Add one below before adding drinks.</p>
       </div>
     <?php else: ?>
-      <div class="table-wrap table-flush">
-        <table class="table table-compact">
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Items</th>
-              <th scope="col">Order</th>
-              <th scope="col">Shown</th>
-              <th scope="col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($categories as $category): ?>
-              <tr>
-                <td>
-                  <span class="bold"><?= e((string) $category['name']) ?></span>
-                  <?php if (!empty($category['description'])): ?>
-                    <br><span class="subtle tiny menu-item-desc"><?= e((string) $category['description']) ?></span>
-                  <?php endif; ?>
-                </td>
-                <td class="tabular">
-                  <a href="<?= e(admin_url('menu.php')) ?>?category=<?= (int) $category['id'] ?>">
-                    <?= (int) $category['product_count'] ?>
-                  </a>
-                </td>
-                <td class="tabular"><?= (int) $category['sort_order'] ?></td>
-                <td>
-                  <span class="badge <?= (int) $category['is_active'] === 1 ? 'badge-ready' : 'badge-completed' ?>">
-                    <?= (int) $category['is_active'] === 1 ? 'Yes' : 'No' ?>
-                  </span>
-                </td>
-                <td class="right nowrap">
-                  <a class="btn btn-sm btn-ghost"
-                     href="<?= e(admin_url('menu.php')) ?>?edit_category=<?= (int) $category['id'] ?>#category-form">Edit</a>
+      <!-- A list rather than a table. Six columns will not fit a sidebar this
+           narrow, and squeezing them only cut the actions off the edge. -->
+      <ul class="cat-list">
+        <?php foreach ($categories as $category): ?>
+          <li class="cat-item<?= (int) $category['id'] === $categoryFilter ? ' is-filtered' : '' ?>">
+            <div class="cat-top">
+              <span class="cat-name"><?= e((string) $category['name']) ?></span>
+              <?php if ((int) $category['is_active'] !== 1): ?>
+                <span class="badge badge-completed">Hidden</span>
+              <?php endif; ?>
+            </div>
 
-                  <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="category_delete">
-                    <input type="hidden" name="id" value="<?= (int) $category['id'] ?>">
-                    <button type="submit" class="btn btn-sm btn-ghost btn-danger-text"
-                            data-confirm="Remove the category &quot;<?= e((string) $category['name']) ?>&quot;?">
-                      Delete
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
+            <?php if (!empty($category['description'])): ?>
+              <p class="cat-desc"><?= e((string) $category['description']) ?></p>
+            <?php endif; ?>
+
+            <div class="cat-foot">
+              <span class="cat-meta">
+                <a href="<?= e(admin_url('menu.php')) ?>?category=<?= (int) $category['id'] ?>">
+                  <?= (int) $category['product_count'] ?> item<?= (int) $category['product_count'] === 1 ? '' : 's' ?>
+                </a>
+                <span class="subtle">&middot; order <?= (int) $category['sort_order'] ?></span>
+              </span>
+
+              <span class="cat-actions">
+                <a class="btn btn-sm btn-ghost"
+                   href="<?= e(admin_url('menu.php')) ?>?edit_category=<?= (int) $category['id'] ?>#category-form">Edit</a>
+
+                <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="action" value="category_delete">
+                  <input type="hidden" name="id" value="<?= (int) $category['id'] ?>">
+                  <button type="submit" class="btn btn-sm btn-ghost btn-danger-text"
+                          data-confirm="Remove the category &quot;<?= e((string) $category['name']) ?>&quot;?">
+                    Delete
+                  </button>
+                </form>
+              </span>
+            </div>
+          </li>
+        <?php endforeach; ?>
+      </ul>
     <?php endif; ?>
 
     <div class="card-body" id="category-form">
@@ -587,16 +620,67 @@ admin_header('Menu', count($categories) . ' categories, ' . count($products) . '
   <section class="card">
     <div class="card-header">
       <h2>Menu items</h2>
-      <?php if ($categoryFilter > 0): ?>
-        <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>">Show all</a>
-      <?php endif; ?>
+      <span class="small subtle">
+        <?php if ($totalProducts === 0): ?>
+          none
+        <?php else: ?>
+          <?= $offset + 1 ?>&ndash;<?= min($offset + PER_PAGE, $totalProducts) ?> of <?= $totalProducts ?>
+        <?php endif; ?>
+      </span>
     </div>
+
+    <!-- Filters. A GET form, so a filtered view is a link you can keep. -->
+    <form class="filter-bar" method="get" action="<?= e(admin_url('menu.php')) ?>" data-no-guard>
+      <div class="filter-field filter-grow">
+        <label class="visually-hidden" for="filter_q">Search items</label>
+        <input class="input" type="search" id="filter_q" name="q" value="<?= e($search) ?>"
+               placeholder="Search by name or description">
+      </div>
+
+      <div class="filter-field">
+        <label class="visually-hidden" for="filter_category">Category</label>
+        <select class="select" id="filter_category" name="category">
+          <option value="">All categories</option>
+          <?php foreach ($categories as $category): ?>
+            <option value="<?= (int) $category['id'] ?>"
+                    <?= $categoryFilter === (int) $category['id'] ? 'selected' : '' ?>>
+              <?= e((string) $category['name']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label class="visually-hidden" for="filter_state">State</label>
+        <select class="select" id="filter_state" name="state">
+          <option value="">Any state</option>
+          <option value="on"<?= $stateFilter === 'on' ? ' selected' : '' ?>>On sale</option>
+          <option value="off"<?= $stateFilter === 'off' ? ' selected' : '' ?>>Hidden</option>
+          <option value="featured"<?= $stateFilter === 'featured' ? ' selected' : '' ?>>Featured</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-sm btn-secondary">
+        <?= admin_icon('icon-search', 'icon-sm') ?> Filter
+      </button>
+
+      <?php if ($hasFilters): ?>
+        <a class="btn btn-sm btn-ghost" href="<?= e(admin_url('menu.php')) ?>">Clear</a>
+      <?php endif; ?>
+    </form>
 
     <?php if ($products === []): ?>
       <div class="empty">
         <?= admin_icon('icon-cup', 'empty-icon') ?>
-        <h3>No items here</h3>
-        <p class="mb-0">Add one with the form below.</p>
+        <?php if ($hasFilters): ?>
+          <h3>Nothing matches those filters</h3>
+          <p class="mb-0">
+            <a href="<?= e(admin_url('menu.php')) ?>">Clear them</a> to see the whole menu.
+          </p>
+        <?php else: ?>
+          <h3>No items here</h3>
+          <p class="mb-0">Add one with the form below.</p>
+        <?php endif; ?>
       </div>
     <?php else: ?>
       <div class="table-wrap table-flush">
@@ -639,7 +723,7 @@ admin_header('Menu', count($categories) . ' categories, ' . count($products) . '
                     <br><span class="subtle tiny menu-item-desc"><?= e((string) $product['description']) ?></span>
                   <?php endif; ?>
                 </td>
-                <td class="small"><?= e((string) $product['category_name']) ?></td>
+                <td class="small nowrap"><?= e((string) $product['category_name']) ?></td>
                 <td class="tabular nowrap"><?= peso($product['price']) ?></td>
                 <td class="nowrap">
                   <span class="badge <?= (int) $product['is_available'] === 1 ? 'badge-ready' : 'badge-cancelled' ?>">
@@ -690,6 +774,12 @@ admin_header('Menu', count($categories) . ' categories, ' . count($products) . '
         </button>
         <button type="button" class="btn btn-sm btn-ghost" data-batch-clear>Clear</button>
       </form>
+
+      <?php if ($totalPages > 1): ?>
+        <div class="card-footer">
+          <?php admin_pagination($page, $totalPages, $filterQuery, 'menu.php'); ?>
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
 
     <div class="card-body" id="product-form">

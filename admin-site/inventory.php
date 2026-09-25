@@ -134,16 +134,57 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     redirect('inventory.php');
 }
 
-$items = db_all(
-    'SELECT * FROM inventory_items ORDER BY (stock_qty <= reorder_level) DESC, name ASC'
+// The low-stock tally is always across everything, never just this page.
+$lowCount = (int) db_value(
+    'SELECT COUNT(*) FROM inventory_items WHERE stock_qty <= reorder_level AND is_active = 1'
 );
 
-$lowCount = 0;
-foreach ($items as $item) {
-    if ((float) $item['stock_qty'] <= (float) $item['reorder_level'] && (int) $item['is_active'] === 1) {
-        $lowCount++;
-    }
+// --- Filters ---------------------------------------------------------------
+$search      = get_string('q');
+$stateFilter = get_string('state');   // '', 'low', 'active', 'inactive'
+
+$conditions = [];
+$params     = [];
+
+if ($search !== '') {
+    $conditions[] = 'name LIKE ?';
+    $params[]     = '%' . $search . '%';
 }
+
+if ($stateFilter === 'low') {
+    $conditions[] = 'stock_qty <= reorder_level AND is_active = 1';
+} elseif ($stateFilter === 'active') {
+    $conditions[] = 'is_active = 1';
+} elseif ($stateFilter === 'inactive') {
+    $conditions[] = 'is_active = 0';
+}
+
+$where = $conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions);
+
+// --- Pagination -------------------------------------------------------------
+const PER_PAGE = 10;
+
+$totalItems = (int) db_value('SELECT COUNT(*) FROM inventory_items' . $where, $params);
+$totalPages = max(1, (int) ceil($totalItems / PER_PAGE));
+$page       = max(1, min($totalPages, get_int('page', 1)));
+$offset     = ($page - 1) * PER_PAGE;
+
+$items = db_all(
+    'SELECT * FROM inventory_items' . $where . '
+     ORDER BY (stock_qty <= reorder_level) DESC, name ASC
+     LIMIT ' . PER_PAGE . ' OFFSET ' . $offset,
+    $params
+);
+
+// Every item, for the adjust dropdown, which must not be limited to this page.
+$allItems = db_all('SELECT id, name, unit, stock_qty FROM inventory_items ORDER BY name ASC');
+
+$filterQuery = array_filter([
+    'q'     => $search !== '' ? $search : null,
+    'state' => $stateFilter !== '' ? $stateFilter : null,
+]);
+
+$hasFilters = $filterQuery !== [];
 
 $selectedId = get_int('item');
 $editId     = get_int('edit');
@@ -179,14 +220,53 @@ admin_header('Inventory', $lowCount === 0
   <section class="card">
     <div class="card-header">
       <h2>Stock on hand</h2>
-      <span class="small subtle"><?= count($items) ?> items</span>
+      <span class="small subtle">
+        <?php if ($totalItems === 0): ?>
+          none
+        <?php else: ?>
+          <?= $offset + 1 ?>&ndash;<?= min($offset + PER_PAGE, $totalItems) ?> of <?= $totalItems ?>
+        <?php endif; ?>
+      </span>
     </div>
+
+    <form class="filter-bar" method="get" action="<?= e(admin_url('inventory.php')) ?>" data-no-guard>
+      <div class="filter-field filter-grow">
+        <label class="visually-hidden" for="filter_q">Search items</label>
+        <input class="input" type="search" id="filter_q" name="q" value="<?= e($search) ?>"
+               placeholder="Search by name">
+      </div>
+
+      <div class="filter-field">
+        <label class="visually-hidden" for="filter_state">State</label>
+        <select class="select" id="filter_state" name="state">
+          <option value="">Any state</option>
+          <option value="low"<?= $stateFilter === 'low' ? ' selected' : '' ?>>Low on stock</option>
+          <option value="active"<?= $stateFilter === 'active' ? ' selected' : '' ?>>Active</option>
+          <option value="inactive"<?= $stateFilter === 'inactive' ? ' selected' : '' ?>>Inactive</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-sm btn-secondary">
+        <?= admin_icon('icon-search', 'icon-sm') ?> Filter
+      </button>
+
+      <?php if ($hasFilters): ?>
+        <a class="btn btn-sm btn-ghost" href="<?= e(admin_url('inventory.php')) ?>">Clear</a>
+      <?php endif; ?>
+    </form>
 
     <?php if ($items === []): ?>
       <div class="empty">
         <?= admin_icon('icon-box', 'empty-icon') ?>
-        <h3>No inventory items</h3>
-        <p class="mb-0">Add your first item using the form beside this list.</p>
+        <?php if ($hasFilters): ?>
+          <h3>Nothing matches those filters</h3>
+          <p class="mb-0">
+            <a href="<?= e(admin_url('inventory.php')) ?>">Clear them</a> to see everything.
+          </p>
+        <?php else: ?>
+          <h3>No inventory items</h3>
+          <p class="mb-0">Add your first item using the form beside this list.</p>
+        <?php endif; ?>
       </div>
     <?php else: ?>
       <div class="table-wrap table-flush">
@@ -232,6 +312,12 @@ admin_header('Inventory', $lowCount === 0
           </tbody>
         </table>
       </div>
+
+      <?php if ($totalPages > 1): ?>
+        <div class="card-footer">
+          <?php admin_pagination($page, $totalPages, $filterQuery, 'inventory.php'); ?>
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
   </section>
 
@@ -318,7 +404,7 @@ admin_header('Inventory', $lowCount === 0
   <section class="card" id="adjust-form">
     <div class="card-header"><h2>Adjust stock</h2></div>
     <div class="card-body">
-      <?php if ($items === []): ?>
+      <?php if ($allItems === []): ?>
         <p class="small subtle mb-0">There is nothing to adjust yet.</p>
       <?php else: ?>
         <form method="post" action="<?= e(admin_url('inventory.php')) ?>">
@@ -328,7 +414,7 @@ admin_header('Inventory', $lowCount === 0
           <div class="field">
             <label class="label" for="item_id">Item <span class="req">*</span></label>
             <select class="select" id="item_id" name="item_id" required>
-              <?php foreach ($items as $item): ?>
+              <?php foreach ($allItems as $item): ?>
                 <option value="<?= (int) $item['id'] ?>"<?= $selectedId === (int) $item['id'] ? ' selected' : '' ?>>
                   <?= e((string) $item['name']) ?> (<?= e(qty($item['stock_qty'])) ?> <?= e((string) $item['unit']) ?>)
                 </option>

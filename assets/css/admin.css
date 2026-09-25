@@ -457,7 +457,7 @@
 }
 
 @media (min-width: 1080px) {
-  .menu-grid      { grid-template-columns: 400px minmax(0, 1fr); }
+  .menu-grid      { grid-template-columns: 360px minmax(0, 1fr); }
   .inventory-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
 }
 
@@ -1075,3 +1075,127 @@
 
 /* In the narrow categories column the clamp needs a tighter ceiling. */
 .menu-grid > .card:first-child .menu-item-desc { max-width: 22ch; }
+
+/* --- Categories list ---------------------------------------------------------
+   Replaces a six-column table that could never fit the sidebar width. Each
+   category stacks: name and state, then the description, then meta and
+   actions on one line. */
+
+.cat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cat-item {
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.cat-item:last-child { border-bottom: 0; }
+.cat-item.is-filtered { background: var(--accent-soft); }
+
+.cat-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.cat-name {
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.cat-desc {
+  margin: 0.15rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cat-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.cat-meta {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cat-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+}
+
+.cat-actions .btn { padding-inline: 0.55rem; }
+
+/* Give the item name room to stay on one line where it can. */
+.menu-grid .table td .bold { white-space: nowrap; }
+
+/* One plain sentence under a panel heading, explaining what it is for. */
+.panel-help {
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  background: var(--bg-sunken);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Inside a card body, where the padding is already provided. */
+.panel-help-flush {
+  padding: 0 0 var(--space-3);
+  background: transparent;
+  border-bottom: 0;
+  font-size: var(--text-xs);
+}
+
+/* Filter bar above a list. Wraps to its own rows on a narrow screen. */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg-sunken);
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-field { flex: 0 1 auto; min-width: 0; }
+.filter-grow { flex: 1 1 12rem; }
+
+.filter-bar .input,
+.filter-bar .select {
+  padding-block: 0.45rem;
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 720px) {
+  .filter-grow { flex-basis: 100%; }
+}
+
+/* Customisation needs a balanced split, not the narrow sidebar the menu page
+   uses: both of its panels carry a table. */
+.options-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .options-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+}
