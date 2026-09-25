@@ -348,6 +348,107 @@
     review();
   })();
 
+  /* --- Menu: batch selection and picture preview ---------------------------- */
+
+  (function menuTools() {
+    /* Tick boxes on the item list, with a select-all in the header and a bar
+       that only appears once something is actually selected. */
+    var table = document.querySelector('[data-batch-table]');
+
+    if (table) {
+      var all = table.querySelector('[data-batch-all]');
+      var bar = document.querySelector('[data-batch-bar]');
+      var count = document.querySelector('[data-batch-count]');
+      var clear = document.querySelector('[data-batch-clear]');
+
+      var items = function () {
+        return Array.prototype.slice.call(table.querySelectorAll('[data-batch-item]'));
+      };
+
+      var review = function () {
+        var picked = items().filter(function (box) { return box.checked; });
+
+        if (count) count.textContent = String(picked.length);
+
+        if (bar) {
+          if (picked.length > 0) {
+            bar.removeAttribute('hidden');
+          } else {
+            bar.setAttribute('hidden', '');
+          }
+        }
+
+        if (all) {
+          all.checked = picked.length > 0 && picked.length === items().length;
+          all.indeterminate = picked.length > 0 && picked.length < items().length;
+        }
+
+        items().forEach(function (box) {
+          var row = box.closest('tr');
+          if (row) row.classList.toggle('is-picked', box.checked);
+        });
+      };
+
+      if (all) {
+        all.addEventListener('change', function () {
+          items().forEach(function (box) { box.checked = all.checked; });
+          review();
+        });
+      }
+
+      table.addEventListener('change', function (event) {
+        if (event.target.hasAttribute('data-batch-item')) review();
+      });
+
+      if (clear) {
+        clear.addEventListener('click', function () {
+          items().forEach(function (box) { box.checked = false; });
+          if (all) all.checked = false;
+          review();
+        });
+      }
+
+      review();
+    }
+
+    /* Show the chosen picture before it is uploaded, so a wrong file is
+       obvious without a round trip to the server. */
+    var input = document.querySelector('[data-picture-input]');
+
+    if (input) {
+      var preview = document.querySelector('[data-picture-preview]');
+      var empty = document.querySelector('[data-picture-empty]');
+
+      input.addEventListener('change', function () {
+        var file = input.files && input.files[0];
+
+        if (!file || !preview) return;
+
+        if (!/^image\//.test(file.type)) {
+          if (window.OurCoffee) window.OurCoffee.toast('That file is not a picture.', 'error');
+          input.value = '';
+          return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+          if (window.OurCoffee) window.OurCoffee.toast('That picture is over the 2 MB limit.', 'error');
+          input.value = '';
+          return;
+        }
+
+        var reader = new FileReader();
+
+        reader.onload = function (event) {
+          preview.src = event.target.result;
+          preview.removeAttribute('hidden');
+          if (empty) empty.setAttribute('hidden', '');
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+  })();
+
   /* --- Analytics charts ---------------------------------------------------------- */
 
   (function charts() {

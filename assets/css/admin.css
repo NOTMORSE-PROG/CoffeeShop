@@ -457,7 +457,7 @@
 }
 
 @media (min-width: 1080px) {
-  .menu-grid      { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+  .menu-grid      { grid-template-columns: 400px minmax(0, 1fr); }
   .inventory-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
 }
 
@@ -962,3 +962,116 @@
   .explainer-compare { grid-template-columns: 1fr; }
   .explainer-arrow { transform: rotate(90deg); margin-inline: auto; }
 }
+
+/* --- Menu: thumbnails, batch selection, picture upload ------------------------ */
+
+.tick-col { width: 2.6rem; }
+.tick-col input { accent-color: var(--accent); width: 1rem; height: 1rem; }
+
+.pic-col { width: 3.4rem; }
+
+.menu-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--cream-100);
+  border: 1px solid var(--border);
+}
+
+.menu-thumb-empty {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.table tr.is-picked { background: var(--accent-soft); }
+
+/* Appears only once something is ticked. */
+.batch-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border);
+  background: var(--bg-sunken);
+  font-size: var(--text-sm);
+}
+
+.batch-bar strong { color: var(--accent); }
+
+.btn-danger-text { color: var(--red-700); }
+.btn-danger-text:hover { background: var(--danger-bg); color: var(--red-800); }
+
+/* Picture field on the item form. */
+.picture-field {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.picture-preview {
+  position: relative;
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--cream-100);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.picture-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.picture-empty {
+  display: grid;
+  place-items: center;
+  gap: 0.2rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.picture-advanced {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.picture-advanced summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.picture-advanced summary:hover { color: var(--accent); }
+
+.batch-textarea {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  min-height: 9rem;
+}
+
+@media (max-width: 620px) {
+  .picture-field { flex-direction: column; }
+  .pic-col { display: none; }
+}
+
+/* The item list gained a tick box and a thumbnail, so its rows need to stay
+   compact: clamp the description rather than letting it stack the row. */
+.menu-item-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 34ch;
+}
+
+/* In the narrow categories column the clamp needs a tighter ceiling. */
+.menu-grid > .card:first-child .menu-item-desc { max-width: 22ch; }

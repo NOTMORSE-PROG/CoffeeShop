@@ -71,6 +71,11 @@ storage/sessions/*
 uploads/*
 !uploads/.gitkeep
 
+# Menu pictures the owner uploads. The folder is tracked, its contents are not:
+# they belong to whoever is running the shop, not to the source.
+assets/img/products/uploads/*
+!assets/img/products/uploads/.gitkeep
+
 # Node (tooling only)
 node_modules/
 
