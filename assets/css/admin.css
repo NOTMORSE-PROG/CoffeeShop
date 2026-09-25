@@ -764,3 +764,201 @@
 /* Typed something, but this rule is not satisfied yet. */
 .rule.is-unmet .rule-mark { border-color: var(--red-600); }
 .rule.is-unmet { color: var(--text-primary); }
+
+/* --- Customisation explainer -------------------------------------------------
+   The page describes a three-layer idea (group, choices, drinks) that the
+   forms alone do not convey, so this spells it out with a worked example. */
+
+.explainer { margin-top: var(--space-5); }
+
+.explainer-lede {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  max-width: 68ch;
+  margin-bottom: var(--space-6);
+}
+
+.explainer-lede strong { color: var(--text-primary); }
+
+.explainer-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-5);
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-7);
+}
+
+.explainer-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.explainer-steps h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-base);
+}
+
+.explainer-steps p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.explainer-num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+/* Side by side: the setup, and the result the customer gets. */
+.explainer-compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-7);
+}
+
+.explainer-arrow {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--cream-200);
+  color: var(--text-muted);
+}
+
+.explainer-caption {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.explainer-panel {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-sunken);
+  height: 100%;
+}
+
+.explainer-preview {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+}
+
+.explainer-panel-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.explainer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-sm);
+}
+
+.explainer-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.explainer-list li:last-child { border-bottom: 0; }
+
+/* A small, non-interactive mock of the customer's option controls. */
+.preview-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.preview-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.preview-choice.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.preview-radio,
+.preview-box {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: none;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-surface);
+}
+
+.preview-radio { border-radius: 50%; }
+.preview-box { border-radius: 3px; }
+
+.preview-radio.is-on {
+  border-color: var(--accent);
+  border-width: 4px;
+}
+
+.explainer-total {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.explainer-total strong { color: var(--accent); }
+
+/* Glossary of the words used on the forms above. */
+.explainer-terms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+  margin: 0 0 var(--space-6);
+}
+
+.explainer-terms dt {
+  font-weight: 700;
+  font-size: var(--text-sm);
+  margin-bottom: 0.15rem;
+}
+
+.explainer-terms dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 860px) {
+  .explainer-compare { grid-template-columns: 1fr; }
+  .explainer-arrow { transform: rotate(90deg); margin-inline: auto; }
+}

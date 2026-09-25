@@ -573,4 +573,137 @@ admin_header(
 
 </div>
 
+<!-- Plain-language explainer. This page describes a three-layer idea that is
+     not obvious from the forms alone, so it is spelled out with a worked
+     example and a picture of what the customer ends up seeing. -->
+<section class="card explainer">
+  <div class="card-header">
+    <h2>How this page works</h2>
+    <span class="small subtle">A worked example</span>
+  </div>
+
+  <div class="card-body">
+    <p class="explainer-lede">
+      A <strong>group</strong> is one question you ask the customer about their drink.
+      The <strong>choices</strong> are the possible answers. Then you tick
+      <strong>which drinks</strong> ask that question.
+    </p>
+
+    <ol class="explainer-steps">
+      <li>
+        <span class="explainer-num">1</span>
+        <div>
+          <h3>Make the group</h3>
+          <p>
+            The question. For example <strong>Sugar Level</strong>.
+            Set it to <strong>Pick one</strong>, because a drink has one sweetness.
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="explainer-num">2</span>
+        <div>
+          <h3>Add the choices</h3>
+          <p>
+            The answers: <strong>No Sugar, 25%, 50%, 75%, 100%</strong>.
+            Mark one as the <strong>default</strong> so it is already selected.
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="explainer-num">3</span>
+        <div>
+          <h3>Tick the drinks</h3>
+          <p>
+            Every drink that should ask it. Sugar Level suits all of them.
+            Add-ons might only suit the coffee ones.
+          </p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="explainer-compare">
+      <div>
+        <p class="explainer-caption">What you set up here</p>
+        <div class="explainer-panel">
+          <p class="explainer-panel-title">Sugar Level <span class="badge badge-plain">Pick one</span></p>
+          <ul class="explainer-list">
+            <li>No Sugar <span class="subtle">free</span></li>
+            <li>50% <span class="badge badge-ready">Default</span></li>
+            <li>100% <span class="subtle">free</span></li>
+          </ul>
+          <p class="explainer-panel-title mt-4">Add-ons <span class="badge badge-plain">Pick any</span></p>
+          <ul class="explainer-list">
+            <li>Extra Shot <span class="accent-text">+<?= e(peso(25)) ?></span></li>
+            <li>Pearls <span class="accent-text">+<?= e(peso(15)) ?></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="explainer-arrow" aria-hidden="true">
+        <?= admin_icon('icon-arrow-right', 'icon') ?>
+      </div>
+
+      <div>
+        <p class="explainer-caption">What the customer sees</p>
+        <div class="explainer-panel explainer-preview">
+          <p class="explainer-panel-title">Sugar Level <span class="subtle small">Pick one</span></p>
+          <div class="preview-choices">
+            <span class="preview-choice"><span class="preview-radio"></span> No Sugar</span>
+            <span class="preview-choice is-on"><span class="preview-radio is-on"></span> 50%</span>
+            <span class="preview-choice"><span class="preview-radio"></span> 100%</span>
+          </div>
+
+          <p class="explainer-panel-title mt-4">Add-ons <span class="subtle small">Pick any</span></p>
+          <div class="preview-choices">
+            <span class="preview-choice"><span class="preview-box"></span> Extra Shot <span class="accent-text">+<?= e(peso(25)) ?></span></span>
+            <span class="preview-choice"><span class="preview-box"></span> Pearls <span class="accent-text">+<?= e(peso(15)) ?></span></span>
+          </div>
+
+          <p class="explainer-total">
+            A <?= e(peso(95)) ?> drink with an Extra Shot becomes
+            <strong><?= e(peso(120)) ?></strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <dl class="explainer-terms">
+      <div>
+        <dt>Pick one</dt>
+        <dd>Round buttons. The customer chooses exactly one, like a sugar level or a size.</dd>
+      </div>
+      <div>
+        <dt>Pick any</dt>
+        <dd>Tick boxes. The customer can choose none, one, or several, like add-ons.</dd>
+      </div>
+      <div>
+        <dt>Default</dt>
+        <dd>Already selected when the drink opens, so most people never have to touch it.</dd>
+      </div>
+      <div>
+        <dt>Required</dt>
+        <dd>The customer cannot add the drink to the cart without answering.</dd>
+      </div>
+      <div>
+        <dt>Extra charge</dt>
+        <dd>Added on top of the drink's own price. Leave it at 0 for choices that cost nothing.</dd>
+      </div>
+      <div>
+        <dt>Used on</dt>
+        <dd>How many drinks currently ask this question. Set it at the bottom of this page.</dd>
+      </div>
+    </dl>
+
+    <div class="alert alert-info mb-0">
+      <?= admin_icon('icon-shield', 'icon-sm') ?>
+      <div>
+        Changing a name or a price here only affects <strong>future</strong> orders. Every order
+        already placed keeps its own copy of what was chosen and what it cost, so an old receipt
+        never changes underneath a customer.
+      </div>
+    </div>
+  </div>
+</section>
+
 <?php admin_footer(); ?>
