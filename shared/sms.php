@@ -133,6 +133,33 @@ function send_order_sms(array $order, string $status, bool $force = false): ?int
 }
 
 /**
+ * How long a message is still worth sending, by status.
+ *
+ * One flat expiry was too blunt. "Being prepared" is worthless an hour later
+ * and only confuses the customer, but "ready for pickup" is still useful
+ * hours afterwards if they have not collected yet, and a cancellation is
+ * worth sending whenever the phone comes back. So the shelf life follows
+ * what the message is actually for.
+ *
+ * The configured value is the baseline; each status scales it.
+ */
+function sms_ttl_for_status(string $status): int
+{
+    $base = max(5, (int) setting('sms_ttl_minutes', 45));
+
+    $multiplier = match ($status) {
+        'preparing'        => 1,    // loses its meaning quickly
+        'pending'          => 2,    // still reassuring a while later
+        'out_for_delivery' => 4,
+        'ready'            => 8,    // useful until they actually collect
+        'cancelled'        => 24,   // always worth saying, whenever it lands
+        default            => 2,
+    };
+
+    return $base * $multiplier;
+}
+
+/**
  * Put a message on the queue for the shop handset to collect.
  *
  * A status text has a short shelf life, so each one carries an expiry.
@@ -141,7 +168,7 @@ function send_order_sms(array $order, string $status, bool $force = false): ?int
  */
 function sms_queue_for_handset(array $order, string $status, string $message, string $phone): ?int
 {
-    $ttl = max(5, (int) setting('sms_ttl_minutes', 45));
+    $ttl = sms_ttl_for_status($status);
 
     try {
         return db_insert(

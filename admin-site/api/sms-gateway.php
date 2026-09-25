@@ -169,6 +169,65 @@ if ($action === 'report') {
     ]);
 }
 
+// --- Plain-text mode, for phone apps that cannot parse JSON -------------------
+//
+// Everything above assumes the client can read JSON and loop over an array.
+// Most phone automation apps can, but building that flow is fiddly, and a
+// capstone team should not have to. These two actions do the same job one
+// message at a time, in a format a single "split on |" step can handle.
+if ($action === 'next') {
+    $messages = sms_claim_batch($deviceId);
+
+    header('Content-Type: text/plain; charset=utf-8');
+
+    if ($messages === []) {
+        // Tell the handset to back off while the shop is shut. There will be
+        // no new orders, so polling through the night only spends the owner's
+        // data allowance and battery for nothing.
+        echo shop_is_open() ? 'NONE' : 'CLOSED';
+        exit;
+    }
+
+    // One message only, so the app never has to loop. The rest stay claimed
+    // and are handed back on the following poll.
+    $first = $messages[0];
+
+    // Anything beyond the first goes back on the queue immediately, rather
+    // than sitting claimed until the timeout.
+    foreach (array_slice($messages, 1) as $spare) {
+        db_query(
+            'UPDATE sms_log SET claimed_at = NULL, attempts = GREATEST(0, attempts - 1) WHERE id = ?',
+            [$spare['id']]
+        );
+    }
+
+    // id|number|message  -- the message itself never contains a pipe, because
+    // gsm7_safe() has already reduced it to plain ASCII and the templates do
+    // not use one.
+    echo $first['id'] . '|' . $first['to'] . '|' . str_replace('|', '/', $first['message']);
+    exit;
+}
+
+if ($action === 'done') {
+    $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
+    $ok = filter_var($_GET['ok'] ?? $_POST['ok'] ?? '1', FILTER_VALIDATE_BOOLEAN);
+
+    header('Content-Type: text/plain; charset=utf-8');
+
+    if ($id <= 0) {
+        echo 'ERROR';
+        exit;
+    }
+
+    $outcome = sms_record_results(
+        [['id' => $id, 'ok' => $ok, 'error' => $ok ? null : 'The handset reported a failure.']],
+        $deviceId
+    );
+
+    echo $outcome['sent'] > 0 || $outcome['failed'] > 0 ? 'OK' : 'IGNORED';
+    exit;
+}
+
 // --- A health check the owner can open in a browser ---------------------------
 if ($action === 'status') {
     $summary = sms_queue_summary();

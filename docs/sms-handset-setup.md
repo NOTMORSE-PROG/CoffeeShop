@@ -90,6 +90,54 @@ header where the app supports it.
 
 ---
 
+## The easy way: two plain-text addresses
+
+If the app cannot handle JSON, or you would simply rather not build a loop that parses it, use
+these two. They do the same job one message at a time, and the response is a single line that a
+"split on |" step can read.
+
+### 1. Ask for the next message
+
+```
+<address>?action=next&device=shop-phone&token=<token>
+```
+
+Either it says there is nothing:
+
+```
+NONE
+```
+
+Or it gives you one message, as `id|number|text`:
+
+```
+23|639171234567|Our Coffee Shop: Hi Mark, we got your order ORD-20260925-8897...
+```
+
+Split that on `|`. The first part is the id, the second is the number to text, the third is the
+message itself.
+
+### 2. Say it was sent
+
+```
+<address>?action=done&id=23&ok=1&device=shop-phone&token=<token>
+```
+
+Replies `OK`. If the text failed, send `ok=0` instead and it is recorded as failed with the
+reason.
+
+### The whole phone setup, then, is
+
+1. Every minute, open address 1
+2. If the answer is `NONE`, stop and wait for the next minute
+3. Otherwise split the answer on `|`
+4. Send an SMS to part 2, with the text from part 3
+5. Open address 2 with the id from part 1
+
+Five steps, no JSON. **MacroDroid** and **Automate** can both do this, and so can Tasker.
+
+---
+
 ## The API
 
 ### Collect messages
