@@ -148,6 +148,34 @@ under Settings.
 
 ---
 
+## Managing the menu
+
+**Pictures.** Edit an item and upload a JPG, PNG, GIF or WebP, up to 2 MB. Square pictures look
+best. You see a preview before it is sent, and there is a tick to remove the current one.
+
+SVG uploads are refused on purpose. An SVG is XML that can contain script, and it would be
+served from the shop's own address. The drink illustrations that ship with the system are SVG
+because they were written as part of it; anything uploaded is treated as untrusted. Uploaded
+pictures live in `assets/img/products/uploads/` and are not committed to the repository.
+
+**Adding a lot at once.** The bottom of the Menu page takes a whole category in one paste:
+
+```
+Iced Americano | 85 | Double shot over ice
+Cold Brew | 110 | Steeped for sixteen hours
+Hot Chocolate | 75
+```
+
+The description is optional. Blank lines are ignored. A line with no valid price, or a name
+already in that category, is skipped and reported back to you with its line number rather than
+being guessed at. Items arrive on sale, unfeatured and without a picture.
+
+**Removing a lot at once.** Tick the items on the list and use Delete selected. Past orders keep
+their own copy of every name and price, so removing something from the menu never changes an
+old receipt.
+
+---
+
 ## Admin accounts
 
 The shop starts with one owner account. If a helper works the counter, give them their own
