@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# Nothing in this folder may be fetched over HTTP.
+#
+# Locally the Apache config keeps this folder outside the web root, so this
+# file does nothing. On shared hosting there is no such config: the whole
+# project sits inside the public folder, and without this anyone could open
+# the database password in a browser.
+#
+# Both syntaxes, because shared hosts run a mix of Apache 2.2 and 2.4.
+# ---------------------------------------------------------------------------
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes

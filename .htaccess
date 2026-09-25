@@ -1,0 +1,90 @@
+# ---------------------------------------------------------------------------
+# Public root, for shared hosting.
+#
+# On a host where the document root can be pointed at a folder, aim it at
+# customer-site/ and none of this is needed. On a host where it cannot, such
+# as InfinityFree, the whole project sits inside htdocs and this file makes
+# that arrangement safe and tidy.
+#
+# It does three things: hides the files that are not meant to be public,
+# serves the customer site from the address root, and sets a few headers that
+# the local Apache config sets and shared hosting does not.
+# ---------------------------------------------------------------------------
+
+Options -Indexes
+
+# --- Never serve these -------------------------------------------------------
+
+# Environment file, with the database password and any API key.
+<Files ".env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+# Dotfiles, version control leftovers, notes, and the deploy config.
+<FilesMatch "^\.|\.(md|sql|sh|log|ini|bak|dist|example)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# The .htaccess files inside shared/, database/ and storage/ do the rest.
+
+# --- Serve the customer site from the root -----------------------------------
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Leave the folders that are meant to be reachable alone.
+    RewriteRule ^(customer-site|admin-site|assets)(/|$) - [L]
+
+    # Everything else is served from the customer site, so the shop's address
+    # is example.com rather than example.com/customer-site.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ customer-site/$1 [L]
+
+    # A bare address lands on the menu rather than a directory listing.
+    RewriteRule ^$ customer-site/index.php [L]
+</IfModule>
+
+# --- Headers the local Apache config normally supplies ------------------------
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# --- Caching ------------------------------------------------------------------
+#
+# Stylesheets and scripts carry a version stamp in their URL, so they can be
+# cached hard: a change produces a new address. See asset_version() in
+# shared/helpers.php.
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/svg+xml "access plus 7 days"
+    ExpiresByType image/jpeg    "access plus 7 days"
+    ExpiresByType image/png     "access plus 7 days"
+    ExpiresByType image/webp    "access plus 7 days"
+    ExpiresByType text/css      "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresDefault "access plus 1 hour"
+</IfModule>
+
+# PHP pages must never be cached: they carry order state and session data.
+<FilesMatch "\.php$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-store, no-cache, must-revalidate"
+    </IfModule>
+</FilesMatch>
