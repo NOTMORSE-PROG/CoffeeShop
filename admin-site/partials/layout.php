@@ -250,7 +250,7 @@ function admin_head(string $title, array $options = []): void
 <?php endforeach; ?>
 <script src="<?= e(admin_asset('js/admin.js')) ?>" defer></script>
 </head>
-<body class="<?= e($bodyClass) ?>">
+<body class="<?= e($bodyClass) ?>" data-sprite="<?= e(admin_asset('img/icons.svg')) ?>">
 
 <div id="page-loader" class="page-loader" role="status" aria-live="polite">
   <svg class="loader-cup" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6"

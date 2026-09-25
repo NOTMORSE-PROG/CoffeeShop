@@ -21,18 +21,37 @@ function hash_password(string $plain): string
 }
 
 /**
- * Check a password policy. Returns an error string, or null when acceptable.
+ * The password rules, in one place.
+ *
+ * Both the server check below and the live checklist in the browser read
+ * this, so what a person is told while typing cannot drift away from what
+ * is actually enforced on submit.
+ */
+function password_policy_rules(): array
+{
+    return [
+        'min_length' => PASSWORD_MIN_LENGTH,
+        'max_length' => 200,
+        'common'     => ['password', '12345678', 'qwerty', 'ourcoffee', 'admin123', 'letmein'],
+    ];
+}
+
+/**
+ * Check a password against the policy. Returns an error string, or null when
+ * it is acceptable.
  *
  * Length does more for real-world resistance than forcing four character
  * classes, so the rule is a solid minimum length plus a mixed-content check.
  */
 function password_policy_error(string $plain): ?string
 {
-    if (strlen($plain) < PASSWORD_MIN_LENGTH) {
-        return 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters long.';
+    $rules = password_policy_rules();
+
+    if (strlen($plain) < $rules['min_length']) {
+        return 'Password must be at least ' . $rules['min_length'] . ' characters long.';
     }
 
-    if (strlen($plain) > 200) {
+    if (strlen($plain) > $rules['max_length']) {
         return 'Password is too long.';
     }
 
@@ -40,8 +59,7 @@ function password_policy_error(string $plain): ?string
         return 'Password must contain at least one letter and one number.';
     }
 
-    $common = ['password', '12345678', 'qwerty', 'ourcoffee', 'admin123', 'letmein'];
-    foreach ($common as $bad) {
+    foreach ($rules['common'] as $bad) {
         if (stripos($plain, $bad) !== false) {
             return 'That password is too easy to guess. Please choose another.';
         }

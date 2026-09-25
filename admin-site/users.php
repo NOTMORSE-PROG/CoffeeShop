@@ -340,14 +340,16 @@ admin_header(
             <?= $editUser === null ? 'Starting password' : 'Reset password' ?>
             <?php if ($editUser === null): ?><span class="req">*</span><?php endif; ?>
           </label>
-          <input class="input" type="text" id="password" name="password" maxlength="200"
-                 autocomplete="new-password"
+          <input class="input" type="password" id="password" name="password" maxlength="200"
+                 autocomplete="new-password" aria-describedby="password-rules"
                  <?= $editUser === null ? 'required' : 'placeholder="Leave blank to keep the current password"' ?>>
           <p class="hint">
-            At least <?= PASSWORD_MIN_LENGTH ?> characters with a letter and a number.
-            Shown as plain text so you can read it out once. They are made to change it
-            at their first sign-in.
+            Use the eye to read it back before you pass it on. They are made to change it
+            at their first sign-in, so this only has to get them in once.
           </p>
+
+          <p class="password-rules-title">It needs</p>
+          <ul class="password-rules" id="password-rules" data-password-rules="password"></ul>
         </div>
 
         <button type="submit" class="btn btn-block" data-busy-label="Saving">
@@ -359,5 +361,7 @@ admin_header(
   </section>
 
 </div>
+
+<script type="application/json" id="password-policy"><?= json_encode(password_policy_rules(), JSON_UNESCAPED_SLASHES) ?></script>
 
 <?php admin_footer(); ?>

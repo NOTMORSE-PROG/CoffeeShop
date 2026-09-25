@@ -78,16 +78,23 @@ if (!$forced) {
         <div class="field">
           <label class="label" for="new_password">New password</label>
           <input class="input" type="password" id="new_password" name="new_password"
-                 required autocomplete="new-password" maxlength="200">
-          <p class="hint">
-            At least <?= (int) PASSWORD_MIN_LENGTH ?> characters, with at least one letter and one number.
-          </p>
+                 required autocomplete="new-password" maxlength="200"
+                 aria-describedby="password-rules">
         </div>
 
         <div class="field">
           <label class="label" for="confirm_password">Repeat the new password</label>
           <input class="input" type="password" id="confirm_password" name="confirm_password"
                  required autocomplete="new-password" maxlength="200">
+        </div>
+
+        <!-- Ticks itself off as they type. The rules come from the server, so
+             this can never promise something the server then rejects. -->
+        <div>
+          <p class="password-rules-title">Your new password needs</p>
+          <ul class="password-rules" id="password-rules"
+              data-password-rules="new_password"
+              data-password-confirm="confirm_password"></ul>
         </div>
 
         <button type="submit" class="btn btn-lg btn-block" data-busy-label="Saving">
@@ -103,5 +110,7 @@ if (!$forced) {
     </div>
   </div>
 <?php endif; ?>
+
+<script type="application/json" id="password-policy"><?= json_encode(password_policy_rules(), JSON_UNESCAPED_SLASHES) ?></script>
 
 <?php admin_footer(); ?>

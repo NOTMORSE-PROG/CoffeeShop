@@ -34,6 +34,23 @@
     return 'rgba(' + ((int >> 16) & 255) + ',' + ((int >> 8) & 255) + ',' + (int & 255) + ',' + alpha + ')';
   }
 
+  /** Build a sprite reference, e.g. iconHref('icon-eye'). */
+  function iconHref(name) {
+    return (document.body.getAttribute('data-sprite') || '') + '#' + name;
+  }
+
+  /** Read a <script type="application/json"> block by id, or null. */
+  function readJson(id) {
+    var source = document.getElementById(id);
+    if (!source) return null;
+
+    try {
+      return JSON.parse(source.textContent);
+    } catch (error) {
+      return null;
+    }
+  }
+
   function el(tag, className, text) {
     var node = document.createElement(tag);
     if (className) node.className = className;
@@ -202,6 +219,133 @@
     }
 
     window.OurCoffee.poll(url, 15000, render);
+  })();
+
+  /* --- Password fields ------------------------------------------------------
+     Two things: a reveal toggle on every password box, and a live checklist
+     on the new-password box. The checklist reads its rules from a JSON block
+     the server prints, so it always matches what the server enforces.      */
+
+  (function passwordFields() {
+    var boxes = document.querySelectorAll('input[type="password"]');
+
+    boxes.forEach(function (input) {
+      if (input.dataset.noReveal === 'true') return;
+
+      var wrap = document.createElement('div');
+      wrap.className = 'password-wrap';
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'password-reveal';
+      button.setAttribute('aria-label', 'Show password');
+      button.setAttribute('aria-pressed', 'false');
+      button.innerHTML =
+        '<svg class="icon-sm" aria-hidden="true"><use href="' + iconHref('icon-eye') + '"></use></svg>';
+
+      button.addEventListener('click', function () {
+        var showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+
+        button.setAttribute('aria-pressed', String(!showing));
+        button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+        button.innerHTML =
+          '<svg class="icon-sm" aria-hidden="true"><use href="'
+          + iconHref(showing ? 'icon-eye' : 'icon-eye-off') + '"></use></svg>';
+
+        // Keep the caret where it was, rather than jumping to the start.
+        var at = input.value.length;
+        input.focus();
+        try { input.setSelectionRange(at, at); } catch (e) { /* not all types allow it */ }
+      });
+
+      wrap.appendChild(button);
+    });
+
+    /* --- Live checklist ----------------------------------------------------- */
+
+    var list = document.querySelector('[data-password-rules]');
+    if (!list) return;
+
+    var config = readJson('password-policy');
+    if (!config) return;
+
+    var target = document.getElementById(list.getAttribute('data-password-rules'));
+    var confirmField = list.getAttribute('data-password-confirm')
+      ? document.getElementById(list.getAttribute('data-password-confirm'))
+      : null;
+
+    if (!target) return;
+
+    var checks = [
+      {
+        key: 'length',
+        label: 'At least ' + config.min_length + ' characters',
+        test: function (v) { return v.length >= config.min_length; }
+      },
+      {
+        key: 'letter',
+        label: 'Contains a letter',
+        test: function (v) { return /[A-Za-z]/.test(v); }
+      },
+      {
+        key: 'number',
+        label: 'Contains a number',
+        test: function (v) { return /[0-9]/.test(v); }
+      },
+      {
+        key: 'common',
+        label: 'Not an easily guessed word',
+        test: function (v) {
+          if (v === '') return false;
+          var lower = v.toLowerCase();
+          return !config.common.some(function (bad) {
+            return lower.indexOf(bad) !== -1;
+          });
+        }
+      }
+    ];
+
+    if (confirmField) {
+      checks.push({
+        key: 'match',
+        label: 'Both boxes match',
+        test: function (v) { return v !== '' && v === confirmField.value; }
+      });
+    }
+
+    // Build the list once, then only flip classes as they type.
+    var items = {};
+
+    checks.forEach(function (check) {
+      var li = document.createElement('li');
+      li.className = 'rule';
+      li.innerHTML =
+        '<span class="rule-mark" aria-hidden="true">'
+        + '<svg class="icon-sm"><use href="' + iconHref('icon-check') + '"></use></svg>'
+        + '</span><span>' + check.label + '</span>';
+      list.appendChild(li);
+      items[check.key] = li;
+    });
+
+    function review() {
+      var value = target.value;
+
+      checks.forEach(function (check) {
+        var ok = check.test(value);
+        var li = items[check.key];
+
+        li.classList.toggle('is-met', ok);
+        li.classList.toggle('is-unmet', !ok && value !== '');
+        li.setAttribute('aria-label', check.label + (ok ? ': met' : ': not yet met'));
+      });
+    }
+
+    target.addEventListener('input', review);
+    if (confirmField) confirmField.addEventListener('input', review);
+    review();
   })();
 
   /* --- Analytics charts ---------------------------------------------------------- */
