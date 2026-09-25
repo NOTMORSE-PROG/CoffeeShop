@@ -81,6 +81,30 @@ define('APP_DEBUG', (bool) env('APP_DEBUG', APP_ENV === 'local'));
 define('CUSTOMER_URL', rtrim((string) env('CUSTOMER_URL', 'http://localhost/CoffeeShop/customer-site'), '/'));
 define('ADMIN_URL',    rtrim((string) env('ADMIN_URL', 'http://localhost/CoffeeShop/admin-site'), '/'));
 
+/**
+ * Where the shared assets folder is served from.
+ *
+ * Normally the pages work this out from their own path. That breaks when a
+ * rewrite serves the customer site from the address root: the script still
+ * lives in customer-site/, so anything derived from its path points into a
+ * folder the browser never sees. Setting this pins it.
+ *
+ * Leave it empty locally, where the script path is the truth.
+ */
+define('ASSETS_URL', rtrim((string) env('ASSETS_URL', ''), '/'));
+
+/**
+ * The public path the customer site answers on.
+ *
+ * Taken from CUSTOMER_URL rather than configured separately, because two
+ * settings that describe the same thing eventually disagree. A rewrite can
+ * make the script path differ from the public path, and this is the truth.
+ *
+ * Note the path for a site at the domain root is an empty string, which is
+ * correct and must not be confused with "not configured".
+ */
+define('CUSTOMER_BASE_PATH', rtrim((string) (parse_url(CUSTOMER_URL, PHP_URL_PATH) ?? ''), '/'));
+
 // --- Database --------------------------------------------------------------
 define('DB_HOST',    env('DB_HOST', '127.0.0.1'));
 define('DB_PORT',    (int) env('DB_PORT', 3306));

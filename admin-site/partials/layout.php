@@ -57,7 +57,10 @@ function admin_base(): string
 /** A URL for a file under the shared assets folder. */
 function admin_asset(string $path): string
 {
-    $url = admin_base() . '/assets/' . ltrim($path, '/');
+    // assets/ is shared with the customer site, so it may sit outside this
+    // site's own base. ASSETS_URL pins it when that is the case.
+    $root = ASSETS_URL !== '' ? ASSETS_URL : admin_base() . '/assets';
+    $url  = $root . '/' . ltrim($path, '/');
 
     // Only the files that change with the code need stamping.
     if (preg_match('/\.(css|js)$/', $path)) {

@@ -98,3 +98,7 @@ Desktop.ini
 
 # Playwright MCP output
 .playwright-mcp/
+
+# Deployment credentials, never committed
+.deploy-env
+.env.production

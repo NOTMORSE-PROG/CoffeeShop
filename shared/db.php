@@ -36,6 +36,21 @@ function db(): PDO
             PDO::ATTR_EMULATE_PREPARES   => false,
             PDO::ATTR_STRINGIFY_FETCHES  => false,
         ]);
+        /*
+         * Put MySQL on the same clock as PHP.
+         *
+         * NOW() uses the database server's timezone, while every date PHP
+         * formats uses Asia/Manila. On a host in another country those differ,
+         * and an order placed a moment ago reads as hours old. Setting the
+         * session offset means a timestamp written by MySQL and one read by
+         * PHP describe the same instant.
+         *
+         * An offset rather than a name, because named zones are only available
+         * if the host has loaded MySQL's timezone tables, and shared hosting
+         * often has not.
+         */
+        $offset = (new DateTime('now', new DateTimeZone(date_default_timezone_get())))->format('P');
+        $pdo->exec("SET time_zone = '" . $offset . "'");
     } catch (PDOException $e) {
         error_log('Database connection failed: ' . $e->getMessage());
 

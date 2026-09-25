@@ -24,23 +24,26 @@ require_once dirname(__DIR__, 2) . '/shared/cart.php';
  */
 start_session('ourcoffee_shop');
 
-/** Base URL for this site, derived from the script path so it survives a rename. */
+/**
+ * Base URL path for this site.
+ *
+ * Taken from CUSTOMER_URL rather than from the script path, because a rewrite
+ * can serve this site from the address root while the files still live in
+ * customer-site/. An empty string means the site answers at the domain root,
+ * which is a real answer rather than a missing one.
+ */
 function site_base(): string
 {
-    static $base = null;
-
-    if ($base === null) {
-        $dir  = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/')));
-        $base = rtrim($dir, '/');
-    }
-
-    return $base;
+    return CUSTOMER_BASE_PATH;
 }
 
 /** URL for a shared asset. */
 function asset(string $path): string
 {
-    $url = site_base() . '/assets/' . ltrim($path, '/');
+    // assets/ is shared by both sites, so it does not necessarily sit under
+    // this site's own base. ASSETS_URL pins it where that is the case.
+    $root = ASSETS_URL !== '' ? ASSETS_URL : site_base() . '/assets';
+    $url  = $root . '/' . ltrim($path, '/');
 
     // Stylesheets and scripts get a cache-busting stamp, since assets/ is
     // served with a long expiry. See asset_version() in shared/helpers.php.
