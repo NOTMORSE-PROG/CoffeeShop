@@ -40,7 +40,18 @@ function site_base(): string
 /** URL for a shared asset. */
 function asset(string $path): string
 {
-    return site_base() . '/assets/' . ltrim($path, '/');
+    $url = site_base() . '/assets/' . ltrim($path, '/');
+
+    // Stylesheets and scripts get a cache-busting stamp, since assets/ is
+    // served with a long expiry. See asset_version() in shared/helpers.php.
+    if (preg_match('/\.(css|js)$/', $path)) {
+        $version = asset_version($path);
+        if ($version !== '') {
+            $url .= '?v=' . $version;
+        }
+    }
+
+    return $url;
 }
 
 /** URL for a page on this site. */

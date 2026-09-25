@@ -449,6 +449,87 @@
     }
   })();
 
+  /* --- Customisation: switch group without reloading -------------------------
+     The choices panel is rendered by the server for whichever group is
+     selected, so switching groups needs a round trip. This fetches just that
+     and swaps it in, instead of throwing the whole page away and repainting
+     it. The links stay real links, so this still works with JS switched off
+     and the back button behaves. */
+
+  (function groupSwitcher() {
+    var panel = document.getElementById('choices-panel');
+    var list = document.querySelector('[data-group-list]') || document;
+
+    if (!panel || !window.fetch || !window.history.pushState) return;
+
+    var busy = false;
+
+    function highlight(groupId) {
+      document.querySelectorAll('[data-group-row]').forEach(function (row) {
+        row.classList.toggle('row-low', row.getAttribute('data-group-row') === String(groupId));
+      });
+    }
+
+    function load(url, groupId, push) {
+      if (busy) return;
+      busy = true;
+      panel.classList.add('is-loading');
+
+      fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+        .then(function (response) {
+          if (!response.ok) throw new Error('bad response');
+          return response.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var fresh = doc.getElementById('choices-panel');
+
+          // If the shape is not what we expect, fall back to a real navigation
+          // rather than leaving a half-updated page.
+          if (!fresh) {
+            window.location.href = url;
+            return;
+          }
+
+          panel.innerHTML = fresh.innerHTML;
+
+          // The server says which group it rendered. Trusting that rather
+          // than the click means back and forward highlight correctly even
+          // with no stored state.
+          var shown = fresh.getAttribute('data-selected-group') || groupId;
+          panel.setAttribute('data-selected-group', shown);
+          highlight(shown);
+
+          if (push) window.history.pushState({ groupId: groupId }, '', url);
+
+          panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        })
+        .catch(function () {
+          window.location.href = url;
+        })
+        .finally(function () {
+          busy = false;
+          panel.classList.remove('is-loading');
+        });
+    }
+
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest('[data-group-link]');
+      if (!link) return;
+
+      // Let the browser handle anything that is not a plain left click.
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+
+      event.preventDefault();
+      load(link.getAttribute('href'), link.getAttribute('data-group-link'), true);
+    });
+
+    window.addEventListener('popstate', function (event) {
+      var groupId = event.state && event.state.groupId;
+      load(window.location.href, groupId, false);
+    });
+  })();
+
   /* --- Analytics charts ---------------------------------------------------------- */
 
   (function charts() {

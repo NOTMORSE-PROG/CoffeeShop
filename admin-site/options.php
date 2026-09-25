@@ -319,9 +319,11 @@ admin_header(
           </thead>
           <tbody>
             <?php foreach ($groups as $group): ?>
-              <tr class="<?= (int) $group['id'] === $selectedId ? 'row-low' : '' ?>">
+              <tr class="<?= (int) $group['id'] === $selectedId ? 'row-low' : '' ?>"
+                  data-group-row="<?= (int) $group['id'] ?>">
                 <td>
-                  <a class="bold" href="<?= e(admin_url('options.php')) ?>?group=<?= (int) $group['id'] ?>">
+                  <a class="bold" data-group-link="<?= (int) $group['id'] ?>"
+                     href="<?= e(admin_url('options.php')) ?>?group=<?= (int) $group['id'] ?>">
                     <?= e((string) $group['name']) ?>
                   </a>
                   <?php if ((int) $group['is_required'] === 1): ?>
@@ -415,8 +417,9 @@ admin_header(
     </div>
   </section>
 
-  <!-- Choices inside the selected group, plus which drinks use it -->
-  <section class="card">
+  <!-- Choices inside the selected group, plus which drinks use it.
+       Swapped in place when a group is clicked, rather than reloading. -->
+  <section class="card" id="choices-panel" data-selected-group="<?= (int) $selectedId ?>">
     <div class="card-header">
       <h2><?= $selected === null ? 'Choices' : e((string) $selected['name']) ?></h2>
       <?php if ($selected !== null): ?>

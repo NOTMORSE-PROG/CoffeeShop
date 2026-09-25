@@ -57,7 +57,17 @@ function admin_base(): string
 /** A URL for a file under the shared assets folder. */
 function admin_asset(string $path): string
 {
-    return admin_base() . '/assets/' . ltrim($path, '/');
+    $url = admin_base() . '/assets/' . ltrim($path, '/');
+
+    // Only the files that change with the code need stamping.
+    if (preg_match('/\.(css|js)$/', $path)) {
+        $version = asset_version($path);
+        if ($version !== '') {
+            $url .= '?v=' . $version;
+        }
+    }
+
+    return $url;
 }
 
 /** A URL for another admin page. */

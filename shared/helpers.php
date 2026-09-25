@@ -66,6 +66,28 @@ function gsm7_safe(string $text): string
     return preg_replace('/[^\x20-\x7E\r\n]/', '', $text) ?? $text;
 }
 
+/**
+ * Append a cache-busting stamp to a stylesheet or script.
+ *
+ * Apache serves everything under assets/ with a long expiry, which is right
+ * for a drink illustration but wrong for CSS and JS: after an update the
+ * browser keeps running the old copy and the change appears not to have
+ * happened. Stamping the URL with the file's modified time means a changed
+ * file is a new URL, while an unchanged one still comes from cache.
+ */
+function asset_version(string $path): string
+{
+    static $stamps = [];
+
+    if (!array_key_exists($path, $stamps)) {
+        $full = APP_ROOT . '/assets/' . ltrim($path, '/');
+        $time = is_file($full) ? filemtime($full) : false;
+        $stamps[$path] = $time === false ? '' : (string) $time;
+    }
+
+    return $stamps[$path];
+}
+
 /** Send a redirect and stop. */
 function redirect(string $url): never
 {
