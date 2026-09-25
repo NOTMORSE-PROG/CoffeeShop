@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Machine endpoints.
+#
+# Apache does not hand the Authorization header to PHP when PHP runs as CGI
+# or FastCGI, which is how most shared hosts run it, InfinityFree included.
+# Without this the handset's Bearer token silently never arrives and every
+# request looks unauthenticated.
+#
+# Two ways of saying the same thing, because which one works depends on the
+# host's Apache version and how PHP is wired in.
+# ---------------------------------------------------------------------------
+
+# Apache 2.4.13 and newer, with PHP as CGI/FastCGI.
+<IfModule mod_cgi.c>
+    CGIPassAuth On
+</IfModule>
+<IfModule mod_fcgid.c>
+    CGIPassAuth On
+</IfModule>
+
+# Everything else: copy the header into an environment variable PHP can read.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+# These return JSON and must never be cached, or the handset would collect the
+# same batch twice from a proxy.
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive Off
+</IfModule>
+
+# No directory listing, whatever the server default is.
+Options -Indexes

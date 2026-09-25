@@ -30,10 +30,21 @@ const SETTING_GROUPS = [
         'blurb' => 'GCash is a static QR code that you confirm by hand. There is no payment processor.',
         'keys'  => ['payment_cash_enabled', 'payment_gcash_enabled', 'gcash_name', 'gcash_number', 'gcash_qr_path'],
     ],
-    'SMS' => [
-        'blurb' => 'Each message costs a credit, so switch off any status the shop does not need.',
-        'keys'  => ['sms_enabled', 'sms_sender_name', 'sms_on_pending', 'sms_on_preparing',
-                    'sms_on_ready', 'sms_on_out_for_delivery', 'sms_on_completed', 'sms_on_cancelled'],
+    'SMS delivery' => [
+        'blurb' => 'How texts leave the system. Sending through the shop handset uses your own '
+                 . 'call and text plan, so it costs nothing per message. Semaphore is the paid '
+                 . 'alternative and is billed per credit.',
+        'keys'  => ['sms_enabled', 'sms_provider', 'sms_sender_name'],
+    ],
+    'SMS timing' => [
+        'blurb' => 'Every message here is one text. Switch off any status the shop does not need.',
+        'keys'  => ['sms_on_pending', 'sms_on_preparing', 'sms_on_ready',
+                    'sms_on_out_for_delivery', 'sms_on_completed', 'sms_on_cancelled'],
+    ],
+    'Handset queue' => [
+        'blurb' => 'Only used when sending through the handset. The defaults suit a small shop.',
+        'keys'  => ['sms_device_name', 'sms_batch_size', 'sms_ttl_minutes',
+                    'sms_max_attempts', 'sms_claim_timeout_seconds'],
     ],
 ];
 
@@ -63,7 +74,13 @@ const SETTING_LABELS = [
     'gcash_number'            => 'GCash number',
     'gcash_qr_path'           => 'GCash QR image path',
     'sms_enabled'             => 'Send SMS notifications',
+    'sms_provider'            => 'Send texts through',
     'sms_sender_name'         => 'Semaphore sender name',
+    'sms_device_name'         => 'Handset label',
+    'sms_batch_size'          => 'Messages per collection',
+    'sms_ttl_minutes'         => 'Give up on a message after (minutes)',
+    'sms_max_attempts'        => 'Hand a message over at most',
+    'sms_claim_timeout_seconds' => 'Return an uncollected message after (seconds)',
     'sms_on_pending'          => 'Text when an order is received',
     'sms_on_preparing'        => 'Text when an order is being prepared',
     'sms_on_ready'            => 'Text when an order is ready',
@@ -83,7 +100,23 @@ function setting_field_type(string $key): string
         'shop_open_time', 'shop_close_time' => 'time',
         'delivery_fee'                      => 'money',
         'delivery_note', 'shop_address'     => 'textarea',
+        'sms_provider'                      => 'choice',
+        'sms_batch_size', 'sms_ttl_minutes',
+        'sms_max_attempts', 'sms_claim_timeout_seconds' => 'number',
         default                             => 'text',
+    };
+}
+
+/** The options for a choice field. */
+function setting_choices(string $key): array
+{
+    return match ($key) {
+        'sms_provider' => [
+            'phone'     => 'The shop handset (free, uses your own plan)',
+            'semaphore' => 'Semaphore API (paid, one credit per text)',
+            'off'       => 'Do not send anything',
+        ],
+        default => [],
     };
 }
 
@@ -130,6 +163,40 @@ if ($leftover !== []) {
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_post_with_csrf();
 
+    // --- The handset token ---------------------------------------------------
+    $action = post_string('action');
+
+    if ($action === 'gateway_token') {
+        $token = sms_generate_device_token();
+
+        set_setting('sms_device_token', $token);
+
+        // Clear the connection record, since the old handset can no longer
+        // authenticate and reporting it as connected would be misleading.
+        set_setting('sms_device_last_seen', '');
+        set_setting('sms_device_last_ip', '');
+
+        audit('settings.updated', 'settings', 'sms_device_token',
+            'Generated a new handset token', null, ['token' => 'regenerated'],
+            (int) $admin['id']);
+
+        flash('success', 'New handset token generated. Put it into the phone app, because the old one no longer works.');
+        redirect('settings.php#handset');
+    }
+
+    if ($action === 'gateway_revoke') {
+        set_setting('sms_device_token', '');
+        set_setting('sms_device_last_seen', '');
+        set_setting('sms_device_last_ip', '');
+
+        audit('settings.updated', 'settings', 'sms_device_token',
+            'Revoked the handset token', null, ['token' => 'revoked'],
+            (int) $admin['id']);
+
+        flash('success', 'Handset token revoked. Nothing can collect messages until you generate a new one.');
+        redirect('settings.php#handset');
+    }
+
     $posted  = is_array($_POST['settings'] ?? null) ? $_POST['settings'] : [];
     $current = all_settings();
 
@@ -155,6 +222,28 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         if ($type === 'time' && $value !== '' && !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $value)) {
             $errors[] = setting_label($key) . ' must be a time such as 07:00.';
+            continue;
+        }
+
+        if ($type === 'choice') {
+            // Only a value we offer may be stored, so a tampered form cannot
+            // put the system into a state the code does not handle.
+            if (!array_key_exists($value, setting_choices($key))) {
+                $errors[] = setting_label($key) . ' is not one of the available options.';
+                continue;
+            }
+
+            $wanted[$key] = $value;
+            continue;
+        }
+
+        if ($type === 'number') {
+            if ($value === '' || !ctype_digit($value)) {
+                $errors[] = setting_label($key) . ' must be a whole number.';
+                continue;
+            }
+
+            $wanted[$key] = (string) max(1, min(86400, (int) $value));
             continue;
         }
 
@@ -264,6 +353,27 @@ admin_header('Settings', 'Only the owner can change these.');
                 <?php if ($hint !== ''): ?><p class="hint"><?= e($hint) ?></p><?php endif; ?>
               </div>
 
+            <?php elseif ($type === 'choice'): ?>
+              <div class="field">
+                <label class="label" for="<?= e($inputId) ?>"><?= e($label) ?></label>
+                <select class="select" id="<?= e($inputId) ?>" name="settings[<?= e($key) ?>]">
+                  <?php foreach (setting_choices($key) as $option => $optionLabel): ?>
+                    <option value="<?= e($option) ?>"<?= $value === $option ? ' selected' : '' ?>>
+                      <?= e($optionLabel) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+                <?php if ($hint !== ''): ?><p class="hint"><?= e($hint) ?></p><?php endif; ?>
+              </div>
+
+            <?php elseif ($type === 'number'): ?>
+              <div class="field">
+                <label class="label" for="<?= e($inputId) ?>"><?= e($label) ?></label>
+                <input class="input tabular" type="number" step="1" min="1" max="86400"
+                       id="<?= e($inputId) ?>" name="settings[<?= e($key) ?>]" value="<?= e($value) ?>">
+                <?php if ($hint !== ''): ?><p class="hint"><?= e($hint) ?></p><?php endif; ?>
+              </div>
+
             <?php elseif ($type === 'money'): ?>
               <div class="field">
                 <label class="label" for="<?= e($inputId) ?>"><?= e($label) ?></label>
@@ -294,5 +404,119 @@ admin_header('Settings', 'Only the owner can change these.');
     </div>
   </div>
 </form>
+
+<!-- The handset connection. Kept outside the settings form because these are
+     actions, not values, and regenerating a token must not depend on the rest
+     of the form validating. -->
+<section class="card" id="handset">
+  <div class="card-header">
+    <h2>Shop handset</h2>
+    <?php
+    $queue    = sms_queue_summary();
+    $token    = trim((string) setting('sms_device_token', ''));
+    $lastSeen = trim((string) setting('sms_device_last_seen', ''));
+    $seenAgo  = $lastSeen === '' ? null : time() - (int) strtotime($lastSeen);
+    $connected = $seenAgo !== null && $seenAgo < 600;
+    ?>
+    <span class="badge <?= $connected ? 'badge-ready' : 'badge-cancelled' ?>">
+      <?= $connected ? 'Connected' : 'Not connected' ?>
+    </span>
+  </div>
+
+  <p class="panel-help">
+    The phone collects messages from the server and sends them on your own plan, so each text
+    costs nothing. Nothing is pushed to the phone, because a web host cannot reach a handset
+    behind a home router or on mobile data.
+  </p>
+
+  <div class="card-body">
+    <div class="handset-stats">
+      <div>
+        <span class="label-sm">Waiting to send</span>
+        <p class="handset-stat<?= $queue['queued'] > 0 ? ' is-warn' : '' ?>"><?= (int) $queue['queued'] ?></p>
+      </div>
+      <div>
+        <span class="label-sm">Sent today</span>
+        <p class="handset-stat"><?= (int) $queue['sent_today'] ?></p>
+      </div>
+      <div>
+        <span class="label-sm">Failed today</span>
+        <p class="handset-stat<?= $queue['failed_today'] > 0 ? ' is-bad' : '' ?>"><?= (int) $queue['failed_today'] ?></p>
+      </div>
+      <div>
+        <span class="label-sm">Last heard from</span>
+        <p class="handset-stat-small">
+          <?= $lastSeen === '' ? 'Never' : e(date('j M, g:i A', (int) strtotime($lastSeen))) ?>
+        </p>
+      </div>
+    </div>
+
+    <?php if ($queue['queued'] > 0 && !$connected): ?>
+      <div class="alert alert-warning">
+        <?= admin_icon('icon-alert', 'icon-sm') ?>
+        <div>
+          There <?= $queue['queued'] === 1 ? 'is a message' : 'are ' . (int) $queue['queued'] . ' messages' ?>
+          waiting and the phone has not checked in recently. Customers can still follow their
+          orders on the tracking page, so nothing is lost, but the texts will not go out until
+          the phone is back online.
+        </div>
+      </div>
+    <?php endif; ?>
+
+    <h3 class="form-heading">Connection details</h3>
+
+    <div class="field">
+      <span class="label">Address the phone calls</span>
+      <input class="input" type="text" readonly
+             value="<?= e(rtrim(ADMIN_URL, '/') . '/api/sms-gateway.php') ?>"
+             data-select-all data-no-reveal="true">
+      <p class="hint">
+        Use the address the phone can actually reach. On a hosted site that is your real domain,
+        not localhost.
+      </p>
+    </div>
+
+    <div class="field">
+      <span class="label">Token</span>
+      <?php if ($token === ''): ?>
+        <p class="small subtle">No token yet. Generate one, then put it into the phone app.</p>
+      <?php else: ?>
+        <input class="input" type="password" readonly value="<?= e($token) ?>"
+               data-select-all>
+        <p class="hint">
+          Treat this like a password. Anyone holding it can read the message queue, which
+          contains customer numbers.
+        </p>
+      <?php endif; ?>
+    </div>
+
+    <div class="row row-wrap">
+      <form method="post" action="<?= e(admin_url('settings.php')) ?>">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="gateway_token">
+        <button type="submit" class="btn btn-sm"
+                data-confirm="<?= $token === '' ? 'Generate a token for the phone?' : 'Generate a new token? The phone will stop working until you update it there too.' ?>">
+          <?= admin_icon('icon-refresh', 'icon-sm') ?>
+          <?= $token === '' ? 'Generate token' : 'Generate a new token' ?>
+        </button>
+      </form>
+
+      <?php if ($token !== ''): ?>
+        <form method="post" action="<?= e(admin_url('settings.php')) ?>">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="gateway_revoke">
+          <button type="submit" class="btn btn-sm btn-ghost btn-danger-text"
+                  data-confirm="Revoke the token? Nothing will be able to collect messages until you generate a new one.">
+            Revoke
+          </button>
+        </form>
+      <?php endif; ?>
+    </div>
+
+    <p class="tiny subtle mt-4 mb-0">
+      Setup steps for the phone are in <code>docs/sms-handset-setup.md</code>.
+    </p>
+  </div>
+</section>
 
 <?php admin_footer(); ?>

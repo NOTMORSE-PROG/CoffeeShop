@@ -1210,3 +1210,38 @@
   opacity: 0.55;
   pointer-events: none;
 }
+
+/* --- Shop handset panel ------------------------------------------------------ */
+
+.handset-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.handset-stat {
+  margin: 0.1rem 0 0;
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.handset-stat.is-warn { color: var(--status-pending); }
+.handset-stat.is-bad  { color: var(--red-700); }
+
+.handset-stat-small {
+  margin: 0.1rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.label-sm {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

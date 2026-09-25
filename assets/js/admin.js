@@ -530,6 +530,15 @@
     });
   })();
 
+  /* Read-only fields that exist to be copied: select the whole value on
+     focus. Done here because the content security policy forbids an inline
+     onfocus attribute. */
+  document.querySelectorAll('[data-select-all]').forEach(function (input) {
+    input.addEventListener('focus', function () {
+      input.select();
+    });
+  });
+
   /* --- Analytics charts ---------------------------------------------------------- */
 
   (function charts() {
