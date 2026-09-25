@@ -34,6 +34,11 @@ folder, import the database, and it runs.
 
 Open the XAMPP Control Panel and start **Apache** and **MySQL**.
 
+**One-time change:** menu pictures are resized when uploaded, which needs PHP's GD extension.
+XAMPP ships it but leaves it switched off. Open `C:/xampp/php/php.ini`, find the line
+`;extension=gd`, remove the leading semicolon, and restart Apache. Without it the system still
+works, but uploaded photos are stored at full camera resolution.
+
 ### 2. Create the database
 
 Open <http://localhost/phpmyadmin>, go to **Import**, and run these two files in order:

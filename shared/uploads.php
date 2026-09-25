@@ -28,6 +28,19 @@ const UPLOAD_DIR = 'assets/img/products/uploads';
 /** Largest accepted upload, in bytes. */
 const UPLOAD_MAX_BYTES = 2 * 1024 * 1024;
 
+/**
+ * Longest side of a stored picture, in pixels.
+ *
+ * A menu photo is shown at 240px on the customer site and 44px in the admin
+ * list. Keeping a 4000px phone photo to serve that is wasteful three times
+ * over: disk on a small hosting plan, the customer's mobile data, and the
+ * time the page takes to paint. 900px is generous for a retina phone screen.
+ */
+const UPLOAD_MAX_EDGE = 900;
+
+/** JPEG quality for the stored copy. 82 is visually clean at this size. */
+const UPLOAD_JPEG_QUALITY = 82;
+
 /** Image types we accept, mapped to the extension we store them with. */
 const UPLOAD_TYPES = [
     IMAGETYPE_JPEG => 'jpg',
@@ -111,15 +124,94 @@ function handle_image_upload(?array $file): array
 
     // Nothing from the submitted filename is reused.
     $name = bin2hex(random_bytes(16)) . '.' . UPLOAD_TYPES[$type];
+    $destination = $dir . '/' . $name;
 
-    if (!@move_uploaded_file($file['tmp_name'], $dir . '/' . $name)) {
-        error_log('Could not move the upload into ' . $dir);
-        return ['ok' => false, 'error' => 'The server could not save the picture.'];
+    // Store a resized copy rather than the original. A phone photo is several
+    // megabytes and thousands of pixels wide; the site shows it at 240.
+    // Re-encoding also strips EXIF, which on a phone photo usually carries
+    // the location where it was taken.
+    if (!shrink_image($file['tmp_name'], $destination, $type, $info)) {
+        // If resizing is unavailable, keeping the original is better than
+        // refusing the upload. The size guard above still applies.
+        if (!@move_uploaded_file($file['tmp_name'], $destination)) {
+            error_log('Could not move the upload into ' . $dir);
+            return ['ok' => false, 'error' => 'The server could not save the picture.'];
+        }
     }
 
-    @chmod($dir . '/' . $name, 0644);
+    @chmod($destination, 0644);
 
     return ['ok' => true, 'path' => UPLOAD_DIR . '/' . $name];
+}
+
+/**
+ * Write a resized, re-encoded copy of an uploaded image.
+ *
+ * Returns false when it cannot be done, so the caller can fall back to
+ * storing the original. GD is present on effectively every PHP host, but
+ * this should not be the thing that breaks an upload if it is missing.
+ */
+function shrink_image(string $source, string $destination, int $type, array $info): bool
+{
+    if (!extension_loaded('gd')) {
+        return false;
+    }
+
+    $width  = (int) ($info[0] ?? 0);
+    $height = (int) ($info[1] ?? 0);
+
+    if ($width < 1 || $height < 1) {
+        return false;
+    }
+
+    $image = match ($type) {
+        IMAGETYPE_JPEG => @imagecreatefromjpeg($source),
+        IMAGETYPE_PNG  => @imagecreatefrompng($source),
+        IMAGETYPE_GIF  => @imagecreatefromgif($source),
+        IMAGETYPE_WEBP => @imagecreatefromwebp($source),
+        default        => false,
+    };
+
+    if (!$image) {
+        return false;
+    }
+
+    // Only ever scale down. Enlarging a small picture just wastes space and
+    // makes it look worse.
+    $scale = min(1.0, UPLOAD_MAX_EDGE / max($width, $height));
+    $newWidth  = max(1, (int) round($width * $scale));
+    $newHeight = max(1, (int) round($height * $scale));
+
+    $canvas = imagecreatetruecolor($newWidth, $newHeight);
+
+    if (!$canvas) {
+        imagedestroy($image);
+        return false;
+    }
+
+    // Keep transparency for the formats that have it, otherwise a PNG logo
+    // comes out on a black background.
+    if ($type === IMAGETYPE_PNG || $type === IMAGETYPE_GIF || $type === IMAGETYPE_WEBP) {
+        imagealphablending($canvas, false);
+        imagesavealpha($canvas, true);
+        $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
+        imagefilledrectangle($canvas, 0, 0, $newWidth, $newHeight, $transparent);
+    }
+
+    imagecopyresampled($canvas, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+    $saved = match ($type) {
+        IMAGETYPE_JPEG => imagejpeg($canvas, $destination, UPLOAD_JPEG_QUALITY),
+        IMAGETYPE_PNG  => imagepng($canvas, $destination, 6),
+        IMAGETYPE_GIF  => imagegif($canvas, $destination),
+        IMAGETYPE_WEBP => imagewebp($canvas, $destination, UPLOAD_JPEG_QUALITY),
+        default        => false,
+    };
+
+    imagedestroy($image);
+    imagedestroy($canvas);
+
+    return (bool) $saved;
 }
 
 /**
