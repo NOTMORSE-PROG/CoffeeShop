@@ -263,7 +263,24 @@ admin_header(
   </div>
 </section>
 
-<div class="chart-grid">
+<?php
+/*
+ * The charts answer three different questions, so they are three tabs rather
+ * than one column five cards tall. The range picker and the four figures above
+ * stay put, because they are the summary every tab is read against.
+ */
+?>
+<div class="tabs" data-tabs>
+  <div class="tablist" role="tablist" aria-label="Analytics sections">
+    <button type="button" class="tab" role="tab" id="tab-sales-tab" aria-controls="tab-sales"
+            aria-selected="true" tabindex="0">Revenue</button>
+    <button type="button" class="tab" role="tab" id="tab-orders-tab" aria-controls="tab-orders"
+            aria-selected="false" tabindex="-1">Orders</button>
+    <button type="button" class="tab" role="tab" id="tab-sms-tab" aria-controls="tab-sms"
+            aria-selected="false" tabindex="-1">Texts</button>
+  </div>
+
+  <div class="tabpanel chart-grid" role="tabpanel" id="tab-sales" aria-labelledby="tab-sales-tab">
 
   <section class="card chart-wide">
     <div class="card-header">
@@ -277,6 +294,10 @@ admin_header(
       </div>
     </div>
   </section>
+
+  </div>
+
+  <div class="tabpanel chart-grid" role="tabpanel" id="tab-orders" aria-labelledby="tab-orders-tab" hidden>
 
   <section class="card">
     <div class="card-header"><h2>Orders by status</h2></div>
@@ -316,6 +337,10 @@ admin_header(
     </div>
   </section>
 
+  </div>
+
+  <div class="tabpanel chart-grid" role="tabpanel" id="tab-sms" aria-labelledby="tab-sms-tab" hidden>
+
   <section class="card">
     <div class="card-header">
       <h2>SMS usage</h2>
@@ -335,6 +360,7 @@ admin_header(
     </div>
   </section>
 
+  </div>
 </div>
 
 <script type="application/json" id="analytics-data"><?=

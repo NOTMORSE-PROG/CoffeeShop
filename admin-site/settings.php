@@ -326,9 +326,34 @@ admin_header('Settings', 'Only the owner can change these.');
 <form method="post" action="<?= e(admin_url('settings.php')) ?>">
   <?= csrf_field() ?>
 
-  <div class="settings-grid">
-    <?php foreach ($grouped as $title => $group): ?>
-      <section class="card">
+  <?php
+  /*
+   * One tab per group. Every panel stays in the document and in the form, so
+   * a single Save still posts the lot and nothing depends on which tab is
+   * showing. Without JavaScript the tablist hides itself and the panels read
+   * as the long page they were before, which still works.
+   */
+  $tabSlug = static fn (string $t): string => 'tab-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($t));
+  ?>
+
+  <div class="tabs" data-tabs>
+    <div class="tablist" role="tablist" aria-label="Settings sections">
+      <?php $first = true; foreach ($grouped as $title => $group): ?>
+        <button type="button" class="tab" role="tab"
+                id="<?= e($tabSlug($title)) ?>-tab"
+                aria-controls="<?= e($tabSlug($title)) ?>"
+                aria-selected="<?= $first ? 'true' : 'false' ?>"
+                tabindex="<?= $first ? '0' : '-1' ?>">
+          <?= e($title) ?>
+        </button>
+      <?php $first = false; endforeach; ?>
+    </div>
+
+    <?php $first = true; foreach ($grouped as $title => $group): ?>
+      <section class="card tabpanel" role="tabpanel"
+               id="<?= e($tabSlug($title)) ?>"
+               aria-labelledby="<?= e($tabSlug($title)) ?>-tab"
+               <?= $first ? '' : 'hidden' ?>>
         <div class="card-header"><h2><?= e($title) ?></h2></div>
         <div class="card-body">
           <p class="hint settings-blurb"><?= e($group['blurb']) ?></p>
@@ -412,7 +437,7 @@ admin_header('Settings', 'Only the owner can change these.');
           <?php endforeach; ?>
         </div>
       </section>
-    <?php endforeach; ?>
+    <?php $first = false; endforeach; ?>
   </div>
 
   <div class="card settings-save">
@@ -426,20 +451,30 @@ admin_header('Settings', 'Only the owner can change these.');
 <!-- The handset connection. Kept outside the settings form because these are
      actions, not values, and regenerating a token must not depend on the rest
      of the form validating. -->
+<?php
+$queue     = sms_queue_summary();
+$token     = trim((string) setting('sms_device_token', ''));
+$lastSeen  = trim((string) setting('sms_device_last_seen', ''));
+$seenAgo   = $lastSeen === '' ? null : time() - (int) strtotime($lastSeen);
+$connected = $seenAgo !== null && $seenAgo < 600;
+?>
+
+<?php
+/*
+ * The whole panel folds, not just the connection details inside it. None of
+ * this is a shop setting: it is the state of a device, and the owner only
+ * opens it when the texts have stopped. Collapsed it still answers the one
+ * question worth asking, by putting the connection badge in the summary.
+ */
+?>
 <section class="card" id="handset">
-  <div class="card-header">
-    <h2>Shop handset</h2>
-    <?php
-    $queue    = sms_queue_summary();
-    $token    = trim((string) setting('sms_device_token', ''));
-    $lastSeen = trim((string) setting('sms_device_last_seen', ''));
-    $seenAgo  = $lastSeen === '' ? null : time() - (int) strtotime($lastSeen);
-    $connected = $seenAgo !== null && $seenAgo < 600;
-    ?>
-    <span class="badge <?= $connected ? 'badge-ready' : 'badge-cancelled' ?>">
-      <?= $connected ? 'Connected' : 'Not connected' ?>
-    </span>
-  </div>
+  <details class="handset-fold">
+    <summary>
+      <span class="handset-fold-title">Shop handset</span>
+      <span class="badge <?= $connected ? 'badge-ready' : 'badge-cancelled' ?>">
+        <?= $connected ? 'Connected' : 'Not connected' ?>
+      </span>
+    </summary>
 
   <p class="panel-help">
     The phone collects messages from the server and sends them on your own plan, so each text
@@ -548,6 +583,8 @@ admin_header('Settings', 'Only the owner can change these.');
       Setup steps for the phone are in <code>docs/sms-handset-setup.md</code>.
     </p>
   </div>
+</section>
+  </details>
 </section>
 
 <?php admin_footer(); ?>

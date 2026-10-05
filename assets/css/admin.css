@@ -555,6 +555,83 @@
 
 .settings-blurb { margin-top: 0; margin-bottom: var(--space-4); }
 
+/* --- Tabs ----------------------------------------------------------------------------- */
+
+/* The tablist only appears once the script has taken over. Without it every
+   panel is visible and the page reads as the long scroll it used to be, which
+   still works; showing a row of tabs that did nothing would not. */
+.tablist { display: none; }
+
+.tabs-ready .tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-3);
+}
+
+.tab {
+  appearance: none;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background var(--transition), color var(--transition);
+}
+
+.tab:hover { color: var(--accent); background: var(--accent-soft); }
+
+.tab[aria-selected="true"] {
+  background: var(--accent);
+  color: #FFFFFF;
+}
+
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* One panel at a time, so it keeps the full width rather than sitting in the
+   three-column grid the long version used. */
+.tabs-ready .tabpanel { margin-bottom: var(--space-5); }
+
+@media (max-width: 620px) {
+  .tabs-ready .tablist { gap: var(--space-1); }
+  .tab { padding: 0.45rem 0.8rem; font-size: var(--text-xs); }
+}
+
+/* The handset panel, folded. Its summary carries the connection badge so the
+   one question worth asking is answered without opening it. */
+.handset-fold > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  list-style: none;
+}
+
+.handset-fold > summary::-webkit-details-marker { display: none; }
+
+.handset-fold-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.handset-fold > summary::after {
+  content: "+";
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.handset-fold[open] > summary::after { content: "2"; }
+.handset-fold[open] > summary { border-bottom: 1px solid var(--border); }
+
 .settings-save { position: sticky; bottom: var(--space-4); box-shadow: var(--shadow-md); }
 
 /* On a phone the sticky bar was taking roughly a fifth of the screen, because

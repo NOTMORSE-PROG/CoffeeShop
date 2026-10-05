@@ -811,4 +811,80 @@
     });
   })();
 
+  /* -------------------------------------------------------------------------
+     Tabs.
+
+     Progressive: the panels are all in the document and all inside the form,
+     so a single Save still posts every section whichever tab is showing. With
+     this file blocked the tablist stays hidden and the page reads as the long
+     scroll it was before.
+     ---------------------------------------------------------------------- */
+  (function () {
+    var groups = document.querySelectorAll('[data-tabs]');
+
+    if (!groups.length) return;
+
+    Array.prototype.forEach.call(groups, function (group) {
+      var tabs = group.querySelectorAll('[role="tab"]');
+      var panels = group.querySelectorAll('[role="tabpanel"]');
+
+      if (tabs.length < 2) return;
+
+      group.classList.add('tabs-ready');
+
+      function select(index, focus) {
+        Array.prototype.forEach.call(tabs, function (tab, i) {
+          var on = i === index;
+          tab.setAttribute('aria-selected', on ? 'true' : 'false');
+          tab.setAttribute('tabindex', on ? '0' : '-1');
+        });
+
+        Array.prototype.forEach.call(panels, function (panel, i) {
+          if (i === index) panel.removeAttribute('hidden');
+          else panel.setAttribute('hidden', '');
+        });
+
+        /* A chart drawn inside a hidden panel has no size to draw into, so it
+           comes out blank or a few pixels tall. Chart.js resizes itself on the
+           window event, which is the least coupled way to tell it from here. */
+        if (window.dispatchEvent) {
+          window.dispatchEvent(new Event('resize'));
+        }
+
+        if (focus) tabs[index].focus();
+      }
+
+      Array.prototype.forEach.call(tabs, function (tab, i) {
+        tab.addEventListener('click', function () { select(i, false); });
+      });
+
+      group.querySelector('[role="tablist"]').addEventListener('keydown', function (event) {
+        var current = -1;
+
+        Array.prototype.forEach.call(tabs, function (tab, i) {
+          if (tab.getAttribute('aria-selected') === 'true') current = i;
+        });
+
+        if (current < 0) return;
+
+        if (event.key === 'ArrowRight') { select((current + 1) % tabs.length, true); event.preventDefault(); }
+        if (event.key === 'ArrowLeft') { select((current - 1 + tabs.length) % tabs.length, true); event.preventDefault(); }
+        if (event.key === 'Home') { select(0, true); event.preventDefault(); }
+        if (event.key === 'End') { select(tabs.length - 1, true); event.preventDefault(); }
+      });
+
+      /* A field failing validation inside a hidden panel would otherwise look
+         like a form that silently refuses to submit. */
+      var form = group.closest('form');
+
+      if (form) {
+        form.addEventListener('invalid', function (event) {
+          Array.prototype.forEach.call(panels, function (panel, i) {
+            if (panel.contains(event.target)) select(i, false);
+          });
+        }, true);
+      }
+    });
+  })();
+
 })();
