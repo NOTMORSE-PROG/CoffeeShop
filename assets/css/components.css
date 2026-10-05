@@ -290,6 +290,11 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
+  /* Establishes the containing block for anything absolutely positioned
+     inside the table. Without it a .visually-hidden label in a far-right
+     header cell is positioned against the page instead, and widens the whole
+     document: on a phone that is a sideways scroll on every table page. */
+  position: relative;
 }
 
 .table {

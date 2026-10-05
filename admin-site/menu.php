@@ -567,8 +567,16 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
       </ul>
     <?php endif; ?>
 
+    <?php
+    /*
+     * Folded away unless it is being used. The list is what the owner comes
+     * here to read; adding a category is occasional. Open automatically when
+     * editing, so the Edit link still lands on a filled-in form.
+     */
+    ?>
     <div class="card-body" id="category-form">
-      <h3 class="form-heading"><?= $editCategory ? 'Edit category' : 'Add a category' ?></h3>
+      <details class="form-fold"<?= $editCategory ? ' open' : '' ?>>
+        <summary><?= $editCategory ? 'Edit category' : 'Add a category' ?></summary>
 
       <form method="post" action="<?= e(admin_url('menu.php')) ?>">
         <?= csrf_field() ?>
@@ -605,6 +613,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           <?php endif; ?>
         </div>
       </form>
+      </details>
     </div>
   </section>
 
@@ -775,7 +784,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
     <?php endif; ?>
 
     <div class="card-body" id="product-form">
-      <h3 class="form-heading"><?= $editProduct ? 'Edit menu item' : 'Add a menu item' ?></h3>
+      <details class="form-fold"<?= $editProduct ? ' open' : '' ?>>
+        <summary><?= $editProduct ? 'Edit menu item' : 'Add a menu item' ?></summary>
 
       <?php if ($categories === []): ?>
         <p class="small subtle mb-0">Add a category first.</p>
@@ -902,6 +912,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           </div>
         </form>
       <?php endif; ?>
+      </details>
     </div>
   </section>
 
@@ -909,14 +920,12 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
 
 <!-- Paste a whole category in one go, for setting the menu up the first time. -->
 <section class="card" id="batch-add">
-  <div class="card-header">
-    <h2>Add several items at once</h2>
-  </div>
-
   <div class="card-body">
     <?php if ($categories === []): ?>
       <p class="small subtle mb-0">Add a category first.</p>
     <?php else: ?>
+      <details class="form-fold">
+        <summary>Add several items at once</summary>
 
       <form method="post" action="<?= e(admin_url('menu.php')) ?>">
         <?= csrf_field() ?>
@@ -976,6 +985,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           each one, or leave them with the plain placeholder.
         </p>
       </form>
+      </details>
     <?php endif; ?>
   </div>
 </section>

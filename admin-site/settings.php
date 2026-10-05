@@ -41,11 +41,23 @@ const SETTING_GROUPS = [
         'keys'  => ['sms_on_pending', 'sms_on_preparing', 'sms_on_ready',
                     'sms_on_out_for_delivery', 'sms_on_completed', 'sms_on_cancelled'],
     ],
-    'Handset queue' => [
-        'blurb' => 'Only used when sending through the handset. The defaults suit a small shop.',
-        'keys'  => ['sms_device_name', 'sms_batch_size', 'sms_ttl_minutes',
-                    'sms_max_attempts', 'sms_claim_timeout_seconds'],
-    ],
+];
+
+/*
+ * Settings this page does not show and will not write.
+ *
+ * Two kinds. The device rows are written by the gateway itself, and the token
+ * is a credential: it was being rendered into an editable text field under
+ * "Other", which is no place for one. The queue tuning is sized for a small
+ * shop already and means nothing to whoever runs the counter.
+ *
+ * Filtering the list rather than only the markup matters, because the save
+ * loop walks the same list. A key that is not in it cannot be posted back
+ * either.
+ */
+const SETTING_HIDDEN = [
+    'sms_device_token', 'sms_device_last_seen', 'sms_device_last_ip', 'sms_device_name',
+    'sms_batch_size', 'sms_ttl_minutes', 'sms_max_attempts', 'sms_claim_timeout_seconds',
 ];
 
 const SETTING_BOOLEANS = [
@@ -134,8 +146,14 @@ $descriptions = [];
 $allKeys      = [];
 
 foreach ($rows as $row) {
-    $allKeys[]                       = (string) $row['key'];
-    $descriptions[(string) $row['key']] = (string) ($row['description'] ?? '');
+    $key = (string) $row['key'];
+
+    if (in_array($key, SETTING_HIDDEN, true)) {
+        continue;
+    }
+
+    $allKeys[]           = $key;
+    $descriptions[$key]  = (string) ($row['description'] ?? '');
 }
 
 $grouped = [];
@@ -400,7 +418,7 @@ admin_header('Settings', 'Only the owner can change these.');
   <div class="card settings-save">
     <div class="card-body row row-wrap">
       <button type="submit" class="btn" data-busy-label="Saving">Save settings</button>
-      <span class="small subtle">Changes take effect on both sites straight away, and are recorded in the audit trail.</span>
+      <span class="small subtle settings-save-note">Changes take effect on both sites straight away, and are recorded in the audit trail.</span>
     </div>
   </div>
 </form>
@@ -463,55 +481,68 @@ admin_header('Settings', 'Only the owner can change these.');
       </div>
     <?php endif; ?>
 
-    <h3 class="form-heading">Connection details</h3>
+    <?php
+    /*
+     * Setup, not daily running. The owner needs this once, when pairing the
+     * phone, and never again. Folded away so the panel reads as "is the phone
+     * working" rather than as a page of connection settings.
+     */
+    ?>
+    <details class="setup-details"<?= $token === '' ? ' open' : '' ?>>
+      <summary>Phone setup<?= $token === '' ? ' - not paired yet' : '' ?></summary>
 
-    <div class="field">
-      <span class="label">Address the phone calls</span>
-      <input class="input" type="text" readonly
-             value="<?= e(rtrim(ADMIN_URL, '/') . '/api/sms-gateway.php') ?>"
-             data-select-all data-no-reveal="true">
-      <p class="hint">
-        Use the address the phone can actually reach. On a hosted site that is your real domain,
-        not localhost.
-      </p>
-    </div>
+      <h3 class="form-heading">Connection details</h3>
 
-    <div class="field">
-      <span class="label">Token</span>
-      <?php if ($token === ''): ?>
-        <p class="small subtle">No token yet. Generate one, then put it into the phone app.</p>
-      <?php else: ?>
-        <input class="input" type="password" readonly value="<?= e($token) ?>"
-               data-select-all>
+      <div class="field">
+        <span class="label">Address the phone calls</span>
+        <input class="input" type="text" readonly
+               value="<?= e(rtrim(ADMIN_URL, '/') . '/api/sms-gateway.php') ?>"
+               data-select-all data-no-reveal="true">
         <p class="hint">
-          Treat this like a password. Anyone holding it can read the message queue, which
-          contains customer numbers.
+          Use the address the phone can actually reach. On a hosted site that is your real domain,
+          not localhost.
         </p>
-      <?php endif; ?>
-    </div>
+      </div>
 
-    <div class="row row-wrap">
-      <form method="post" action="<?= e(admin_url('settings.php')) ?>">
-        <?= csrf_field() ?>
-        <input type="hidden" name="action" value="gateway_token">
-        <button type="submit" class="btn btn-sm"
-                data-confirm="<?= $token === '' ? 'Generate a token for the phone?' : 'Generate a new token? The phone will stop working until you update it there too.' ?>">
-          <?= admin_icon('icon-refresh', 'icon-sm') ?>
-          <?= $token === '' ? 'Generate token' : 'Generate a new token' ?>
-        </button>
-      </form>
+      <div class="field">
+        <span class="label">Token</span>
+        <?php if ($token === ''): ?>
+          <p class="small subtle">No token yet. Generate one, then put it into the phone app.</p>
+        <?php else: ?>
+          <input class="input" type="password" readonly value="<?= e($token) ?>"
+                 data-select-all>
+          <p class="hint">
+            Treat this like a password. Anyone holding it can read the message queue, which
+            contains customer numbers.
+          </p>
+        <?php endif; ?>
+      </div>
 
-      <?php if ($token !== ''): ?>
+      <div class="row row-wrap">
         <form method="post" action="<?= e(admin_url('settings.php')) ?>">
           <?= csrf_field() ?>
-          <input type="hidden" name="action" value="gateway_revoke">
-          <button type="submit" class="btn btn-sm btn-ghost btn-danger-text"
-                  data-confirm="Revoke the token? Nothing will be able to collect messages until you generate a new one.">
-            Revoke
+          <input type="hidden" name="action" value="gateway_token">
+          <button type="submit" class="btn btn-sm"
+                  data-confirm="<?= $token === '' ? 'Generate a token for the phone?' : 'Generate a new token? The phone will stop working until you update it there too.' ?>">
+            <?= admin_icon('icon-refresh', 'icon-sm') ?>
+            <?= $token === '' ? 'Generate token' : 'Generate a new token' ?>
           </button>
         </form>
-      <?php endif; ?>
-    </div>
+
+        <?php if ($token !== ''): ?>
+          <form method="post" action="<?= e(admin_url('settings.php')) ?>">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="gateway_revoke">
+            <button type="submit" class="btn btn-sm btn-ghost btn-danger-text"
+                    data-confirm="Revoke the token? Nothing will be able to collect messages until you generate a new one.">
+              Revoke
+            </button>
+          </form>
+        <?php endif; ?>
+      </div>
+
+
+    </details>
 
     <p class="tiny subtle mt-4 mb-0">
       Setup steps for the phone are in <code>docs/sms-handset-setup.md</code>.

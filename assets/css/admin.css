@@ -171,7 +171,11 @@
 .admin-content {
   flex: 1 1 auto;
   width: 100%;
-  max-width: 1280px;
+  /* Was 1280px, which left roughly 360px of dead space beside the content on
+     a 1920 screen. This is a dashboard of tables and charts rather than prose,
+     so it should use the width it is given; the cap only stops lines running
+     silly on an ultrawide. */
+  max-width: 1600px;
   padding: var(--space-5);
   display: flex;
   flex-direction: column;
@@ -553,6 +557,15 @@
 
 .settings-save { position: sticky; bottom: var(--space-4); box-shadow: var(--shadow-md); }
 
+/* On a phone the sticky bar was taking roughly a fifth of the screen, because
+   the note beside the button wrapped onto three lines. The note explains
+   something the owner reads once, so it steps aside and leaves the button. */
+@media (max-width: 720px) {
+  .settings-save .card-body { padding-block: var(--space-3); }
+  .settings-save-note { display: none; }
+  .settings-save .btn { width: 100%; }
+}
+
 /* --- Under 900px the sidebar slides in over the page ------------------------------------------- */
 
 @media (max-width: 900px) {
@@ -851,6 +864,50 @@
 }
 
 .picture-advanced summary:hover { color: var(--accent); }
+
+/* A fold for setup a shop owner touches once. Styled as a quiet row rather
+   than a button, so it does not compete with the things they use daily. */
+.setup-details {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
+
+.setup-details > summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  list-style: revert;
+}
+
+.setup-details > summary:hover { color: var(--accent); }
+.setup-details[open] > summary { margin-bottom: var(--space-4); }
+
+/* A form folded under the list it belongs to. The list is what the page is
+   for; adding and editing are occasional, and leaving every form expanded
+   made the menu page four screens tall. The summary is styled as a button so
+   it still reads as the action it is. */
+.form-fold > summary {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  list-style: none;
+}
+
+.form-fold > summary::-webkit-details-marker { display: none; }
+.form-fold > summary::before { content: "+"; font-weight: 700; color: var(--accent); }
+.form-fold[open] > summary::before { content: "2"; }
+.form-fold > summary:hover { border-color: var(--accent); color: var(--accent); }
+.form-fold[open] > summary { margin-bottom: var(--space-4); }
 
 /* The batch-add rows. Narrow price column, roomy name and description, and
    inputs that sit flush in the cell rather than looking like a form bolted
