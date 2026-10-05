@@ -252,3 +252,30 @@ server is fine and the problem is on the phone: check the SMS permission.
 
 **Messages come back "Expired before the handset collected it".** The phone was offline longer
 than the expiry. Either bring it back sooner or raise the expiry in Settings.
+
+---
+
+## The simplest setup: read the headers
+
+Every `action=next` reply also carries the same three fields as headers:
+
+```
+X-Sms-Id:   104
+X-Sms-To:   639171234567
+X-Sms-Text: Our Coffee Shop: Hi Andrea, your order ORD-20261005-9001 is ready.
+```
+
+When there is nothing to send, `X-Sms-To` comes back empty.
+
+This exists because splitting a string is the fiddliest part of setting up a phone automation
+app, and most of them can drop a header straight into a variable instead. The whole phone setup
+then becomes:
+
+1. Every minute, GET `<address>?action=next&device=shop-phone&token=<token>`, saving the
+   response headers into a dictionary variable
+2. Only carry on if `X-Sms-To` is not empty
+3. Send an SMS to `X-Sms-To` with the text `X-Sms-Text`
+4. GET `<address>?action=done&id=<X-Sms-Id>&ok=1&device=shop-phone&token=<token>`
+
+No splitting, no JSON. The body still returns `id|number|text` exactly as before, so anything
+already built against it keeps working.

@@ -181,6 +181,13 @@ if ($action === 'next') {
     header('Content-Type: text/plain; charset=utf-8');
 
     if ($messages === []) {
+        // An empty recipient header on the way out too, so a phone app has a
+        // single thing to test: send when X-Sms-To has something in it. It
+        // never has to compare the body against two different words.
+        header('X-Sms-Id: 0');
+        header('X-Sms-To: ');
+        header('X-Sms-Text: ');
+
         // Tell the handset to back off while the shop is shut. There will be
         // no new orders, so polling through the night only spends the owner's
         // data allowance and battery for nothing.
@@ -200,6 +207,25 @@ if ($action === 'next') {
             [$spare['id']]
         );
     }
+
+    /*
+     * The same three fields also go out as headers.
+     *
+     * A phone automation app can read a header straight into a variable, so
+     * taking them this way means it never has to split a string, which is the
+     * fiddliest part of setting one of those apps up. The body below stays
+     * exactly as it was for anything already reading it.
+     *
+     * Safe to put in a header: gsm7_safe() has already reduced the message to
+     * single-line printable ASCII well under any header length limit. The
+     * belt-and-braces strip is in case that ever stops being true, because a
+     * newline in a header would split the response.
+     */
+    $headerSafe = static fn (string $v): string => trim(preg_replace('/[^\x20-\x7E]/', ' ', $v) ?? '');
+
+    header('X-Sms-Id: ' . (int) $first['id']);
+    header('X-Sms-To: ' . $headerSafe((string) $first['to']));
+    header('X-Sms-Text: ' . $headerSafe((string) $first['message']));
 
     // id|number|message  -- the message itself never contains a pipe, because
     // gsm7_safe() has already reduced it to plain ASCII and the templates do
