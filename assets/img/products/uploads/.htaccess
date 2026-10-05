@@ -1,0 +1,49 @@
+# ---------------------------------------------------------------------------
+# Pictures only. Nothing in this folder may ever be run as a script.
+#
+# Everything here was uploaded through the admin menu form. That form already
+# refuses anything GD cannot decode, and names each file with random hex plus
+# an extension taken from the detected image type, so a .php can never land
+# here in the first place.
+#
+# This file is the second lock. If a host is ever configured to hand some
+# other extension to the PHP interpreter, or a later change writes a
+# different kind of file here, the uploads folder must not become a way to
+# run code. Unlike the other protected folders this one stays readable,
+# because the menu pictures are served from it.
+#
+# Everything below is mod_mime or core, and every php_flag is wrapped. A bare
+# php_flag is a 500 on any host running PHP through FPM or CGI rather than
+# mod_php, which is what the live server does.
+# ---------------------------------------------------------------------------
+
+# Take away any handler or type mapping that would route a file here to an
+# interpreter, so it is served as a plain file instead.
+<IfModule mod_mime.c>
+    RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .pht .cgi .pl .py .sh
+    RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .pht
+</IfModule>
+
+# And refuse to serve such a file at all, whatever the handler situation is.
+<FilesMatch "(?i)\.(php|phtml|php[3-8]|phps|pht|cgi|pl|py|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Belt and braces on the hosts that do run mod_php.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+Options -Indexes -ExecCGI

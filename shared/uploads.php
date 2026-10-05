@@ -131,8 +131,26 @@ function handle_image_upload(?array $file): array
     // Re-encoding also strips EXIF, which on a phone photo usually carries
     // the location where it was taken.
     if (!shrink_image($file['tmp_name'], $destination, $type, $info)) {
-        // If resizing is unavailable, keeping the original is better than
-        // refusing the upload. The size guard above still applies.
+        // A failed resize can leave a part-written file behind.
+        if (is_file($destination)) {
+            @unlink($destination);
+        }
+
+        /*
+         * Only keep the original when the server has no GD at all, which is
+         * the case the fallback exists for.
+         *
+         * If GD is loaded and still could not decode the file, then whatever
+         * its first few bytes claim, it is not a picture this site can serve.
+         * It would show as a broken image on the menu, and storing bytes we
+         * cannot read inside a web-served folder is not worth doing. A file
+         * carrying a valid image header with something else behind it lands
+         * here, which is exactly what should be refused.
+         */
+        if (extension_loaded('gd')) {
+            return ['ok' => false, 'error' => 'That file is not an image we can read.'];
+        }
+
         if (!@move_uploaded_file($file['tmp_name'], $destination)) {
             error_log('Could not move the upload into ' . $dir);
             return ['ok' => false, 'error' => 'The server could not save the picture.'];
