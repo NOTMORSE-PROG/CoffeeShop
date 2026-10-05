@@ -162,7 +162,7 @@ if ($stateFilter === 'low') {
 $where = $conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions);
 
 // --- Pagination -------------------------------------------------------------
-const PER_PAGE = 10;
+const PER_PAGE = 20;
 
 $totalItems = (int) db_value('SELECT COUNT(*) FROM inventory_items' . $where, $params);
 $totalPages = max(1, (int) ceil($totalItems / PER_PAGE));

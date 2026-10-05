@@ -17,7 +17,7 @@ $featured = db_all(
      FROM products p
      JOIN categories c ON c.id = p.category_id
      WHERE p.is_featured = 1 AND p.is_available = 1
-     ORDER BY p.sort_order, p.id
+     ORDER BY p.name
      LIMIT 4'
 );
 
@@ -26,7 +26,7 @@ $categories = db_all(
             (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.is_available = 1) AS product_count
      FROM categories c
      WHERE c.is_active = 1
-     ORDER BY c.sort_order, c.id'
+     ORDER BY c.name'
 );
 
 customer_head('', 'Order ahead from Our Coffee Shop in Mandaluyong City and get SMS updates on your order.', 'page-home');

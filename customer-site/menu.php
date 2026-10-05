@@ -28,7 +28,7 @@ $products = db_all(
      FROM products p
      JOIN categories c ON c.id = p.category_id
      WHERE c.is_active = 1 AND ' . implode(' AND ', $where) . '
-     ORDER BY c.sort_order, c.id, p.sort_order, p.id',
+     ORDER BY c.name, p.name',
     $params
 );
 

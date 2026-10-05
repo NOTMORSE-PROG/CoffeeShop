@@ -776,4 +776,39 @@
       });
     }
   })();
+  /* -------------------------------------------------------------------------
+     Add another row on the batch-add table.
+
+     The form works without this: it ships with five rows, and the owner can
+     submit it as many times as they like. This only saves them a round trip
+     when they have more than five things to add.
+     ---------------------------------------------------------------------- */
+  (function () {
+    var button = document.querySelector('[data-batch-add-row]');
+    var table = document.querySelector('[data-batch-rows]');
+
+    if (!button || !table) return;
+
+    var body = table.tBodies[0];
+
+    if (!body || !body.rows.length) return;
+
+    button.addEventListener('click', function () {
+      var row = body.rows[body.rows.length - 1].cloneNode(true);
+      var inputs = row.querySelectorAll('input');
+
+      for (var i = 0; i < inputs.length; i++) {
+        inputs[i].value = '';
+        // The first row carries a more specific label; a copy should not.
+        if (inputs[i].getAttribute('aria-label') === 'Name of the first item') {
+          inputs[i].setAttribute('aria-label', 'Name');
+        }
+      }
+
+      body.appendChild(row);
+
+      if (inputs.length) inputs[0].focus();
+    });
+  })();
+
 })();

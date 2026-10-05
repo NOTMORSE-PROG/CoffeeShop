@@ -63,7 +63,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $id          = (int) ($_POST['id'] ?? 0);
         $name        = clean_text(post_string('name'), 80);
         $description = clean_text(post_string('description'), 255);
-        $sortOrder   = (int) ($_POST['sort_order'] ?? 0);
         $isActive    = isset($_POST['is_active']) ? 1 : 0;
 
         if ($name === '') {
@@ -77,15 +76,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $slug = unique_slug('categories', $name, $id);
 
                 db_query(
-                    'UPDATE categories SET name = ?, slug = ?, description = ?, sort_order = ?, is_active = ?
+                    'UPDATE categories SET name = ?, slug = ?, description = ?, is_active = ?
                      WHERE id = ?',
-                    [$name, $slug, $description ?: null, $sortOrder, $isActive, $id]
+                    [$name, $slug, $description ?: null, $isActive, $id]
                 );
 
                 [$old, $new] = audit_diff($before, [
                     'name' => $name, 'slug' => $slug, 'description' => $description,
-                    'sort_order' => $sortOrder, 'is_active' => $isActive,
-                ], ['name', 'slug', 'description', 'sort_order', 'is_active']);
+                    'is_active' => $isActive,
+                ], ['name', 'slug', 'description', 'is_active']);
 
                 audit('category.updated', 'category', $id, 'Edited category ' . $name, $old, $new, $adminId);
                 flash('success', 'Category updated.');
@@ -94,12 +93,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $slug = unique_slug('categories', $name);
 
             $newId = db_insert(
-                'INSERT INTO categories (name, slug, description, sort_order, is_active) VALUES (?, ?, ?, ?, ?)',
-                [$name, $slug, $description ?: null, $sortOrder, $isActive]
+                'INSERT INTO categories (name, slug, description, is_active) VALUES (?, ?, ?, ?)',
+                [$name, $slug, $description ?: null, $isActive]
             );
 
             audit('category.created', 'category', $newId, 'Added category ' . $name, null, [
-                'name' => $name, 'slug' => $slug, 'sort_order' => $sortOrder,
+                'name' => $name, 'slug' => $slug,
             ], $adminId);
 
             flash('success', 'Category added.');
@@ -162,7 +161,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $clearImage   = isset($_POST['clear_image']);
         $isAvailable = isset($_POST['is_available']) ? 1 : 0;
         $isFeatured  = isset($_POST['is_featured']) ? 1 : 0;
-        $sortOrder   = (int) ($_POST['sort_order'] ?? 0);
 
         $categoryExists = (int) db_value('SELECT COUNT(*) FROM categories WHERE id = ?', [$categoryId]) > 0;
 
@@ -206,10 +204,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             db_query(
                 'UPDATE products
                  SET category_id = ?, name = ?, slug = ?, description = ?, price = ?,
-                     image_path = ?, is_available = ?, is_featured = ?, sort_order = ?
+                     image_path = ?, is_available = ?, is_featured = ?
                  WHERE id = ?',
                 [$categoryId, $name, $slug, $description ?: null, $price,
-                 $finalImage, $isAvailable, $isFeatured, $sortOrder, $id]
+                 $finalImage, $isAvailable, $isFeatured, $id]
             );
 
             // Once the row points elsewhere, the file it used to point at is
@@ -223,9 +221,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             [$old, $new] = audit_diff($before, [
                 'category_id' => $categoryId, 'name' => $name, 'price' => number_format($price, 2, '.', ''),
                 'description' => $description, 'image_path' => $imagePath,
-                'is_available' => $isAvailable, 'is_featured' => $isFeatured, 'sort_order' => $sortOrder,
+                'is_available' => $isAvailable, 'is_featured' => $isFeatured,
             ], ['category_id', 'name', 'price', 'description', 'image_path',
-                'is_available', 'is_featured', 'sort_order']);
+                'is_available', 'is_featured']);
 
             audit('product.updated', 'product', $id, 'Edited menu item ' . $name, $old, $new, $adminId);
             flash('success', 'Menu item updated.');
@@ -234,10 +232,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
             $newId = db_insert(
                 'INSERT INTO products
-                    (category_id, name, slug, description, price, image_path, is_available, is_featured, sort_order)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (category_id, name, slug, description, price, image_path, is_available, is_featured)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 [$categoryId, $name, $slug, $description ?: null, $price,
-                 $uploadedPath ?? ($imagePath ?: null), $isAvailable, $isFeatured, $sortOrder]
+                 $uploadedPath ?? ($imagePath ?: null), $isAvailable, $isFeatured]
             );
 
             audit('product.created', 'product', $newId, 'Added menu item ' . $name, null, [
@@ -274,46 +272,48 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     // --- Add several items at once -----------------------------------------
     if ($action === 'product_batch_add') {
         $categoryId = (int) ($_POST['category_id'] ?? 0);
-        $raw        = (string) ($_POST['bulk'] ?? '');
 
         if ((int) db_value('SELECT COUNT(*) FROM categories WHERE id = ?', [$categoryId]) === 0) {
             flash('error', 'Choose a category that exists.');
             redirect('menu.php#batch-add');
         }
 
-        $lines    = preg_split('/\r\n|\r|\n/', $raw) ?: [];
+        /*
+         * One row per item, as three parallel arrays from the table in the
+         * form. A row the owner simply left blank is skipped rather than
+         * complained about.
+         */
+        $names        = (array) ($_POST['item_name'] ?? []);
+        $prices       = (array) ($_POST['item_price'] ?? []);
+        $descriptions = (array) ($_POST['item_description'] ?? []);
+
         $added    = 0;
         $problems = [];
-        $lineNo   = 0;
 
-        foreach ($lines as $line) {
-            $lineNo++;
-            $line = trim($line);
+        foreach ($names as $i => $rawName) {
+            $rowNo       = (int) $i + 1;
+            $name        = clean_text(is_string($rawName) ? $rawName : '', 120);
+            $priceRaw    = trim(str_replace([',', "\u{20B1}"], '', (string) ($prices[$i] ?? '')));
+            $description = clean_text((string) ($descriptions[$i] ?? ''), 400);
 
-            if ($line === '') {
+            if ($name === '' && $priceRaw === '' && $description === '') {
                 continue;
             }
 
-            // Name | Price | Description, with the description optional.
-            $parts       = array_map('trim', explode('|', $line));
-            $name        = clean_text($parts[0] ?? '', 120);
-            $priceRaw    = str_replace([',', "\u{20B1}"], '', $parts[1] ?? '');
-            $description = clean_text($parts[2] ?? '', 400);
-
             if ($name === '') {
-                $problems[] = 'Line ' . $lineNo . ' has no name.';
+                $problems[] = 'Row ' . $rowNo . ' has no name.';
                 continue;
             }
 
             if ($priceRaw === '' || !is_numeric($priceRaw)) {
-                $problems[] = 'Line ' . $lineNo . ' (' . $name . ') has no valid price.';
+                $problems[] = 'Row ' . $rowNo . ' (' . $name . ') has no valid price.';
                 continue;
             }
 
             $price = round((float) $priceRaw, 2);
 
             if ($price < 0 || $price > 99999999) {
-                $problems[] = 'Line ' . $lineNo . ' (' . $name . ') has a price out of range.';
+                $problems[] = 'Row ' . $rowNo . ' (' . $name . ') has a price out of range.';
                 continue;
             }
 
@@ -325,8 +325,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
             $newId = db_insert(
                 'INSERT INTO products
-                    (category_id, name, slug, description, price, is_available, is_featured, sort_order)
-                 VALUES (?, ?, ?, ?, ?, 1, 0, 0)',
+                    (category_id, name, slug, description, price, is_available, is_featured)
+                 VALUES (?, ?, ?, ?, ?, 1, 0)',
                 [$categoryId, $name, unique_slug('products', $name), $description ?: null, $price]
             );
 
@@ -340,7 +340,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         if ($added > 0) {
             flash('success', $added . ' item' . ($added === 1 ? '' : 's') . ' added.'
-                . ($problems !== [] ? ' Some lines were skipped.' : ''));
+                . ($problems !== [] ? ' Some rows were skipped.' : ''));
         }
 
         if ($problems !== []) {
@@ -435,7 +435,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
 $categories = db_all(
     'SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) AS product_count
-     FROM categories c ORDER BY c.sort_order ASC, c.name ASC'
+     FROM categories c ORDER BY c.name ASC'
 );
 
 // --- Filters ---------------------------------------------------------------
@@ -468,7 +468,7 @@ if ($stateFilter === 'on') {
 $productWhere = $conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions);
 
 // --- Pagination -------------------------------------------------------------
-const PER_PAGE = 10;
+const PER_PAGE = 20;
 
 $totalProducts = (int) db_value(
     'SELECT COUNT(*) FROM products p JOIN categories c ON c.id = p.category_id' . $productWhere,
@@ -483,7 +483,7 @@ $products = db_all(
     'SELECT p.*, c.name AS category_name
      FROM products p
      JOIN categories c ON c.id = p.category_id' . $productWhere . '
-     ORDER BY c.sort_order ASC, c.name ASC, p.sort_order ASC, p.name ASC
+     ORDER BY c.name ASC, p.name ASC
      LIMIT ' . PER_PAGE . ' OFFSET ' . $offset,
     $productParams
 );
@@ -585,13 +585,6 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           <label class="label" for="category_description">Description</label>
           <input class="input" type="text" id="category_description" name="description" maxlength="255"
                  value="<?= e((string) ($editCategory['description'] ?? '')) ?>">
-        </div>
-
-        <div class="field">
-          <label class="label" for="category_sort">Position</label>
-          <input class="input" type="number" id="category_sort" name="sort_order" step="1" min="0" max="9999"
-                 value="<?= (int) ($editCategory['sort_order'] ?? 0) ?>">
-          <p class="hint">Lower numbers appear first on the customer menu.</p>
         </div>
 
         <label class="choice mb-4">
@@ -824,12 +817,6 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                      value="<?= e(number_format((float) ($editProduct['price'] ?? 0), 2, '.', '')) ?>">
             </div>
 
-            <div class="field">
-              <label class="label" for="product_sort">Position</label>
-              <input class="input" type="number" id="product_sort" name="sort_order" step="1" min="0" max="9999"
-                     value="<?= (int) ($editProduct['sort_order'] ?? 0) ?>">
-              <p class="hint">Lower numbers appear first within the category.</p>
-            </div>
           </div>
 
           <?php $currentImage = (string) ($editProduct['image_path'] ?? ''); ?>
@@ -924,18 +911,12 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
 <section class="card" id="batch-add">
   <div class="card-header">
     <h2>Add several items at once</h2>
-    <span class="small subtle">One per line</span>
   </div>
 
   <div class="card-body">
     <?php if ($categories === []): ?>
       <p class="small subtle mb-0">Add a category first.</p>
     <?php else: ?>
-      <p class="explainer-lede">
-        Type or paste one drink per line as
-        <strong>Name | Price | Description</strong>.
-        The description is optional. Everything goes into the category you pick.
-      </p>
 
       <form method="post" action="<?= e(admin_url('menu.php')) ?>">
         <?= csrf_field() ?>
@@ -950,21 +931,45 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           </select>
         </div>
 
-        <div class="field">
-          <label class="label" for="batch_bulk">The items <span class="req">*</span></label>
-          <textarea class="textarea batch-textarea" id="batch_bulk" name="bulk" rows="8" required
-placeholder="Iced Americano | 85 | Double shot over ice
-Cold Brew | 110 | Steeped for sixteen hours
-Hot Chocolate | 75"></textarea>
-          <p class="hint">
-            Prices are in pesos. Blank lines are ignored. A line with no price, or a name that is
-            already in that category, is skipped and reported back to you rather than guessed at.
-          </p>
+        <div class="table-wrap">
+          <table class="table batch-add-table" data-batch-rows>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col" class="nowrap">Price</th>
+                <th scope="col">Description <span class="subtle">(optional)</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php for ($i = 0; $i < 5; $i++): ?>
+                <tr>
+                  <td><input class="input" type="text" name="item_name[]" maxlength="120"
+                             <?= $i === 0 ? 'aria-label="Name of the first item"' : 'aria-label="Name"' ?>></td>
+                  <td><input class="input tabular" type="number" name="item_price[]"
+                             step="0.01" min="0" max="99999999" aria-label="Price"></td>
+                  <td><input class="input" type="text" name="item_description[]" maxlength="400"
+                             aria-label="Description"></td>
+                </tr>
+              <?php endfor; ?>
+            </tbody>
+          </table>
         </div>
 
-        <button type="submit" class="btn" data-busy-label="Adding">
-          <?= admin_icon('icon-plus', 'icon-sm') ?> Add these items
-        </button>
+        <p class="hint">
+          Fill in as many rows as you need and leave the rest blank. Prices are in pesos. A row
+          with no price, or a name already in that category, is skipped and reported back rather
+          than guessed at.
+        </p>
+
+        <div class="row row-wrap mt-3">
+          <button type="button" class="btn btn-sm btn-secondary" data-batch-add-row>
+            <?= admin_icon('icon-plus', 'icon-sm') ?> Add another row
+          </button>
+
+          <button type="submit" class="btn" data-busy-label="Adding">
+            <?= admin_icon('icon-plus', 'icon-sm') ?> Add these items
+          </button>
+        </div>
 
         <p class="tiny subtle mt-3 mb-0">
           They arrive on sale, unfeatured, with no picture. Add pictures afterwards by editing

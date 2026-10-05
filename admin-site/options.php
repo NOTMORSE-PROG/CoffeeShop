@@ -268,7 +268,7 @@ $products = db_all(
     'SELECT p.id, p.name, c.name AS category_name
      FROM products p
      JOIN categories c ON c.id = p.category_id
-     ORDER BY c.sort_order ASC, c.name ASC, p.sort_order ASC, p.name ASC'
+     ORDER BY c.name ASC, p.name ASC'
 );
 
 $assigned = $selected === null ? [] : array_map(

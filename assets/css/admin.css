@@ -340,7 +340,7 @@
 
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--space-3) var(--space-4);
 }
 
@@ -457,7 +457,7 @@
 }
 
 @media (min-width: 1080px) {
-  .menu-grid      { grid-template-columns: 360px minmax(0, 1fr); }
+  .menu-grid      { grid-template-columns: 290px minmax(0, 1fr); }
   .inventory-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
 }
 
@@ -852,12 +852,14 @@
 
 .picture-advanced summary:hover { color: var(--accent); }
 
-.batch-textarea {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  line-height: 1.6;
-  min-height: 9rem;
-}
+/* The batch-add rows. Narrow price column, roomy name and description, and
+   inputs that sit flush in the cell rather than looking like a form bolted
+   into a table. */
+.batch-add-table th { white-space: nowrap; }
+.batch-add-table td { padding: var(--space-2); vertical-align: middle; }
+.batch-add-table .input { margin: 0; }
+.batch-add-table td:nth-child(2) { width: 9rem; }
+.batch-add-table td:nth-child(1) { width: 32%; }
 
 @media (max-width: 620px) {
   .picture-field { flex-direction: column; }
@@ -872,7 +874,9 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  max-width: 34ch;
+  /* Wide enough that most descriptions finish rather than being cut off
+     mid-word, which reads as broken rather than as a summary. */
+  max-width: 40ch;
 }
 
 /* In the narrow categories column the clamp needs a tighter ceiling. */
@@ -947,6 +951,16 @@
 /* Give the item name room to stay on one line where it can. */
 .menu-grid .table td .bold { white-space: nowrap; }
 
+/* The item table shares the row with the categories column, so the two widest
+   columns have to give up their slack first. State badges stack instead of
+   sitting in a line, and the row actions use tighter padding. Without this the
+   table runs past its card and the Edit link is the part that gets cut off. */
+.menu-grid .table td:nth-child(6) .badge { display: block; width: fit-content; }
+.menu-grid .table td:nth-child(6) .badge + .badge { margin-top: 0.2rem; }
+.menu-grid .table td:nth-child(7) .btn { padding-inline: 0.5rem; }
+.menu-grid .table th:nth-child(3),
+.menu-grid .table td:nth-child(3) { width: 34%; }
+
 /* One plain sentence under a panel heading, explaining what it is for. */
 .panel-help {
   margin: 0;
@@ -965,7 +979,9 @@
   font-size: var(--text-xs);
 }
 
-/* Filter bar above a list. Wraps to its own rows on a narrow screen. */
+/* Filter bar above a list. Wraps to its own rows on a narrow screen.
+   This is the compact form that sits inside another card, on Menu and
+   Inventory, whose children are .filter-field. */
 .filter-bar {
   display: flex;
   align-items: center;
@@ -974,6 +990,17 @@
   padding: var(--space-3) var(--space-5);
   background: var(--bg-sunken);
   border-bottom: 1px solid var(--border);
+}
+
+/* Orders, Audit and Analytics use the standalone card form instead. Its
+   children are a grid of fields and a row of buttons underneath, so it must
+   not be a flex row: as a flex child the grid collapses to one column and
+   leaves most of the card empty, with the buttons stranded beside it. */
+.card.filter-bar {
+  display: block;
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-surface);
+  border-bottom: 0;
 }
 
 .filter-field { flex: 0 1 auto; min-width: 0; }

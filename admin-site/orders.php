@@ -11,7 +11,7 @@ start_session();
 send_security_headers();
 require_login();
 
-const ORDERS_PER_PAGE = 25;
+const ORDERS_PER_PAGE = 20;
 
 $filters = [
     'status'         => get_string('status'),

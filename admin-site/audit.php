@@ -14,7 +14,7 @@ start_session();
 send_security_headers();
 require_login();
 
-const AUDIT_PER_PAGE = 50;
+const AUDIT_PER_PAGE = 20;
 
 $filters = [
     'admin_id'    => get_int('admin_id'),
