@@ -2,8 +2,10 @@
 /**
  * Change the signed-in user's password.
  *
- * The seeded owner account is created with must_change_password set, so this
- * page is the first thing a new installation shows after sign-in.
+ * Normally reached from the menu, by choice. It is also the only page an
+ * account with must_change_password set can open: that is how someone the
+ * owner just created, or whose password the owner just reset, picks their own.
+ * The seeded owner is not flagged, so a fresh installation signs straight in.
  */
 
 declare(strict_types=1);

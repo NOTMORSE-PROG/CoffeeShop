@@ -128,7 +128,8 @@ In this order, because each rules out a different failure:
 
 1. Open your address. The menu should load with pictures.
 2. Open `/admin-site/login.php`. The sign-in page should appear.
-3. Sign in as `owner` with the seeded password. It will force a new one. Set it now.
+3. Sign in as `owner` with the seeded password. It goes straight to the dashboard. That password
+   is in the README, so set your own now from **Change password**.
 4. Place a test order on the customer site.
 5. Open it in the admin queue and move it through Preparing and Ready.
 6. Track it on the customer site with the reference and the mobile number.

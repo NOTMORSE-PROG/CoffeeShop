@@ -84,8 +84,9 @@ to get started. `.env` is never committed.
 | Customer site | <http://localhost/ourcoffee> |
 | Admin site | <http://localhost/ourcoffee-admin> |
 
-Sign in to the admin site with **`owner`** / **`OurCoffee2026!`**. It will make you set a
-new password immediately. Do that before showing the system to anyone.
+Sign in to the admin site with **`owner`** / **`OurCoffee2026!`**, which takes you straight to
+the dashboard. That password is printed here in the README, so change it under
+**Settings → Change password** before the system is deployed anywhere real.
 
 ---
 
