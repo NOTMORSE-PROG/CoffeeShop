@@ -46,12 +46,6 @@ function cart_count(): int
     return $count;
 }
 
-/** Whether the cart holds anything. */
-function cart_is_empty(): bool
-{
-    return cart_lines() === [];
-}
-
 /**
  * A stable key for one product plus one specific set of options, so adding
  * the same drink with the same customisation increments instead of adding a

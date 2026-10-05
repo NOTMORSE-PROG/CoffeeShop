@@ -69,6 +69,19 @@ if (!$forced) {
       <form method="post" action="<?= e(admin_url('change-password.php')) ?>" class="stack">
         <?= csrf_field() ?>
 
+        <?php
+        /*
+         * A password form with no username field leaves a password manager
+         * unable to tell which account the new password belongs to, so it
+         * either saves nothing or saves it against the wrong entry. Chrome
+         * warns about this and will not accept a type="hidden" field for it,
+         * so this is a real input kept out of sight. Nobody fills it in, and
+         * the page already shows the same name above.
+         */
+        ?>
+        <input class="visually-hidden" type="text" name="username" autocomplete="username"
+               value="<?= e((string) $admin['username']) ?>" readonly tabindex="-1" aria-hidden="true">
+
         <div class="field">
           <label class="label" for="current_password">Current password</label>
           <input class="input" type="password" id="current_password" name="current_password"

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/settings.php';
 require_once __DIR__ . '/sms.php';
 require_once __DIR__ . '/audit.php';
@@ -158,12 +159,24 @@ function place_order(array $cart, array $customer): array
         return ['ok' => false, 'errors' => ['Please give a valid Philippine mobile number, for example 09171234567.']];
     }
 
+    /*
+     * The checkout form checks the name too, but this function is the only way
+     * an order is ever created, so it enforces its own invariants rather than
+     * trusting whoever called it. Without this an empty name reaches the order
+     * queue as a blank customer.
+     */
+    $name = clean_text((string) ($customer['name'] ?? ''), 120);
+
+    if (!valid_person_name($name)) {
+        return ['ok' => false, 'errors' => ['Please give the name we should put on the order.']];
+    }
+
     try {
         $result = db_transaction(function () use (
             $priced, $customer, $orderType, $deliveryAddress, $deliveryCity,
-            $deliveryFee, $subtotal, $total, $paymentMethod, $phone
+            $deliveryFee, $subtotal, $total, $paymentMethod, $phone, $name
         ) {
-            $customerId = upsert_customer((string) $customer['name'], $phone, $customer['email'] ?? null);
+            $customerId = upsert_customer($name, $phone, $customer['email'] ?? null);
 
             // Retry on the very unlikely chance of a reference collision.
             $orderRef = null;
@@ -190,7 +203,7 @@ function place_order(array $cart, array $customer): array
                 [
                     $orderRef,
                     $customerId,
-                    $customer['name'],
+                    $name,
                     $phone,
                     $orderType,
                     $deliveryAddress,
@@ -375,7 +388,8 @@ function change_order_status(int $orderId, string $newStatus, ?int $adminId, ?st
     $current = (string) $order['status'];
 
     if ($current === $newStatus) {
-        return ['ok' => false, 'error' => 'The order is already ' . status_label($newStatus) . '.'];
+        return ['ok' => false, 'error' => 'The order is already '
+            . status_label($newStatus, (string) $order['order_type']) . '.'];
     }
 
     if (!can_transition($current, $newStatus, (string) $order['order_type'])) {
@@ -383,8 +397,8 @@ function change_order_status(int $orderId, string $newStatus, ?int $adminId, ?st
             'ok'    => false,
             'error' => sprintf(
                 'An order that is %s cannot be moved to %s.',
-                status_label($current),
-                status_label($newStatus)
+                status_label($current, (string) $order['order_type']),
+                status_label($newStatus, (string) $order['order_type'])
             ),
         ];
     }
@@ -431,7 +445,12 @@ function change_order_status(int $orderId, string $newStatus, ?int $adminId, ?st
         $newStatus === 'cancelled' ? 'order.cancelled' : 'order.status_changed',
         'order',
         $order['order_ref'],
-        sprintf('Order %s: %s to %s', $order['order_ref'], status_label($current), status_label($newStatus)),
+        sprintf(
+            'Order %s: %s to %s',
+            $order['order_ref'],
+            status_label($current, (string) $order['order_type']),
+            status_label($newStatus, (string) $order['order_type'])
+        ),
         ['status' => $current],
         ['status' => $newStatus, 'note' => $note],
         $adminId

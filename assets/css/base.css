@@ -100,8 +100,6 @@ code, kbd, pre { font-family: var(--font-mono); font-size: 0.9em; }
 }
 
 .stack > * + * { margin-top: var(--space-4); }
-.stack-sm > * + * { margin-top: var(--space-2); }
-.stack-lg > * + * { margin-top: var(--space-6); }
 
 .row {
   display: flex;
@@ -166,7 +164,6 @@ code, kbd, pre { font-family: var(--font-mono); font-size: 0.9em; }
 .right { text-align: right; }
 .tabular { font-variant-numeric: tabular-nums; }
 
-.mt-0 { margin-top: 0; }
 .mb-0 { margin-bottom: 0; }
 .mb-2 { margin-bottom: var(--space-2); }
 .mb-4 { margin-bottom: var(--space-4); }
@@ -205,10 +202,6 @@ code, kbd, pre { font-family: var(--font-mono); font-size: 0.9em; }
   color: #fff;
 }
 
-@media print {
-  .no-print { display: none !important; }
-  body { background: #fff; }
-}
 
 /* --- Spacing and sizing utilities -----------------------------------------
    The content security policy blocks inline style attributes, so every
@@ -220,7 +213,6 @@ code, kbd, pre { font-family: var(--font-mono); font-size: 0.9em; }
 .mt-4 { margin-top: var(--space-4); }
 .mt-5 { margin-top: var(--space-5); }
 .mt-6 { margin-top: var(--space-6); }
-.mt-auto { margin-top: auto; }
 
 .pb-6 { padding-bottom: var(--space-6); }
 .p-2 { padding: var(--space-2); }

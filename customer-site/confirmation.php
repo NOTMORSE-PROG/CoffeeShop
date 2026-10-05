@@ -85,10 +85,14 @@ customer_head('Order ' . $order['order_ref'], 'Your order has been received.');
               <p class="step-title"><?= e(status_label($status, (string) $order['order_type'])) ?></p>
               <p class="step-note">
                 <?php
+                // The "ready" step means two different things, so it reads
+                // differently depending on how the order is being fulfilled.
                 echo match ($status) {
                     'pending'          => 'We have your order and it is queued.',
                     'preparing'        => 'Your drinks are being made.',
-                    'ready'            => 'Ready for pickup at the shop.',
+                    'ready'            => $order['order_type'] === 'delivery'
+                        ? 'Packed and waiting for the rider.'
+                        : 'Ready for pickup at the shop.',
                     'out_for_delivery' => 'On its way to your address.',
                     'completed'        => 'All done. Enjoy.',
                     default            => '',

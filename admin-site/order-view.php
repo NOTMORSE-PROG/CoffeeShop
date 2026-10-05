@@ -12,14 +12,24 @@ start_session();
 send_security_headers();
 require_login();
 
-$admin   = current_admin();
-$orderId = get_int('id');
+$admin = current_admin();
+
+/*
+ * The id arrives in the form on a POST and in the query string otherwise.
+ * Resolve it, and load the order, before anything below needs either. The
+ * status handler reports the new status using a label that reads differently
+ * for delivery orders, so it needs the order in hand to say the right thing.
+ */
+$orderId = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'
+    ? (int) ($_POST['id'] ?? 0)
+    : get_int('id');
+
+$order = $orderId > 0 ? find_order($orderId) : null;
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_post_with_csrf();
 
-    $orderId = (int) ($_POST['id'] ?? 0);
-    $action  = post_string('action');
+    $action = post_string('action');
 
     if ($action === 'status') {
         $newStatus = post_string('status');
@@ -33,7 +43,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         );
 
         if ($result['ok']) {
-            flash('success', 'Order moved to ' . status_label($newStatus, (string) $order['order_type']) . '.');
+            flash('success', 'Order moved to ' . status_label($newStatus, (string) ($order['order_type'] ?? '')) . '.');
         } else {
             flash('error', (string) $result['error']);
         }
@@ -51,7 +61,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         // For when a customer says the text never arrived. `force` bypasses
         // the per-status switch, because the owner is asking for this one
         // deliberately and it costs a credit either way.
-        $resendOrder = find_order($orderId);
+        $resendOrder = $order;
 
         if ($resendOrder === null) {
             flash('error', 'That order no longer exists.');
@@ -84,8 +94,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     redirect('order-view.php?id=' . $orderId);
 }
-
-$order = $orderId > 0 ? find_order($orderId) : null;
 
 if ($order === null) {
     admin_head('Order not found');
@@ -417,7 +425,7 @@ admin_header(
             <?php foreach ($smsHistory as $sms): ?>
               <tr>
                 <td class="nowrap small"><?= e(date('j M, g:i A', (int) strtotime((string) $sms['created_at']))) ?></td>
-                <td class="small"><?= e(status_label((string) ($sms['trigger_status'] ?? ''))) ?></td>
+                <td class="small"><?= e(status_label((string) ($sms['trigger_status'] ?? ''), (string) $order['order_type'])) ?></td>
                 <td>
                   <span class="badge <?= e($smsBadge((string) $sms['status'])) ?>">
                     <?= e(ucfirst((string) $sms['status'])) ?>

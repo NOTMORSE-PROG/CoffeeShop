@@ -103,10 +103,19 @@ function post_string(string $key, string $default = ''): string
     return is_string($value) ? trim($value) : $default;
 }
 
-/** Read an integer from GET. */
+/**
+ * Read an integer from GET.
+ *
+ * filter_input() answers three different ways: the integer, null when the key
+ * is absent, and false when it is present but not a number. Only null is
+ * caught by ??, so ?id=abc used to return false and the int return type then
+ * made that a fatal error. Anything that is not an integer is the default.
+ */
 function get_int(string $key, int $default = 0): int
 {
-    return filter_input(INPUT_GET, $key, FILTER_VALIDATE_INT) ?? $default;
+    $value = filter_input(INPUT_GET, $key, FILTER_VALIDATE_INT);
+
+    return is_int($value) ? $value : $default;
 }
 
 /** Read a trimmed string from GET. */
@@ -251,9 +260,7 @@ function allowed_next_statuses(string $current, string $orderType): array
 {
     $flow = match ($current) {
         'pending'          => ['preparing', 'cancelled'],
-        'preparing'        => $orderType === 'delivery'
-                              ? ['ready', 'cancelled']
-                              : ['ready', 'cancelled'],
+        'preparing'        => ['ready', 'cancelled'],
         'ready'            => $orderType === 'delivery'
                               ? ['out_for_delivery', 'completed', 'cancelled']
                               : ['completed', 'cancelled'],

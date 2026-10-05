@@ -219,6 +219,12 @@ function valid_person_name(string $name): bool
         return false;
     }
 
+    // At least one letter, or "..." and "--" would count as names and reach
+    // the order queue as a customer nobody can be called by.
+    if (!preg_match('/\p{L}/u', $name)) {
+        return false;
+    }
+
     return (bool) preg_match("/^[\p{L}\p{M}' .\-]+$/u", $name);
 }
 
