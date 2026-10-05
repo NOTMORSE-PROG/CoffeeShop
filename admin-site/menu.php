@@ -545,7 +545,6 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                 <a href="<?= e(admin_url('menu.php')) ?>?category=<?= (int) $category['id'] ?>">
                   <?= (int) $category['product_count'] ?> item<?= (int) $category['product_count'] === 1 ? '' : 's' ?>
                 </a>
-                <span class="subtle">&middot; order <?= (int) $category['sort_order'] ?></span>
               </span>
 
               <span class="cat-actions">
@@ -589,7 +588,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
         </div>
 
         <div class="field">
-          <label class="label" for="category_sort">Sort order</label>
+          <label class="label" for="category_sort">Position</label>
           <input class="input" type="number" id="category_sort" name="sort_order" step="1" min="0" max="9999"
                  value="<?= (int) ($editCategory['sort_order'] ?? 0) ?>">
           <p class="hint">Lower numbers appear first on the customer menu.</p>
@@ -826,9 +825,10 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
             </div>
 
             <div class="field">
-              <label class="label" for="product_sort">Sort order</label>
+              <label class="label" for="product_sort">Position</label>
               <input class="input" type="number" id="product_sort" name="sort_order" step="1" min="0" max="9999"
                      value="<?= (int) ($editProduct['sort_order'] ?? 0) ?>">
+              <p class="hint">Lower numbers appear first within the category.</p>
             </div>
           </div>
 

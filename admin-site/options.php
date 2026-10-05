@@ -390,9 +390,11 @@ admin_header(
           </div>
 
           <div class="field">
-            <label class="label" for="group_sort">Order</label>
+            <label class="label" for="group_sort">Position</label>
             <input class="input tabular" type="number" id="group_sort" name="sort_order"
                    value="<?= (int) ($editGroup['sort_order'] ?? 0) ?>">
+            <p class="hint">Low numbers first. This decides whether the customer picks Size or
+              Sugar Level first.</p>
           </div>
         </div>
 
@@ -523,9 +525,11 @@ admin_header(
             </div>
 
             <div class="field">
-              <label class="label" for="option_sort">Order</label>
+              <label class="label" for="option_sort">Position</label>
               <input class="input tabular" type="number" id="option_sort" name="sort_order"
                      value="<?= (int) ($editOption['sort_order'] ?? 0) ?>">
+              <p class="hint">Low numbers first. This is what puts Regular before Large, and
+                25% before 50%.</p>
             </div>
           </div>
 
