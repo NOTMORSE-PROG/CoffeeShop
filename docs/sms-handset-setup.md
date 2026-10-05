@@ -279,3 +279,54 @@ then becomes:
 
 No splitting, no JSON. The body still returns `id|number|text` exactly as before, so anything
 already built against it keeps working.
+
+---
+
+## The macro that is on the shop phone
+
+Built in MacroDroid on the shop handset. Written down so it can be rebuilt if the phone is
+reset or replaced.
+
+**Name:** Our Coffee Shop SMS
+
+**Trigger** — Date/Time, Regular Interval
+- Interval `00:01:00`
+- "Use alarm" ticked. Xiaomi and other aggressive power managers will otherwise drift or stop
+  the timer.
+
+**Action 1** — Web Interactions, HTTP Request
+- Method `GET`
+- URL `<address>?action=next&device=shop-phone&token=<token>`
+- "Block next actions until complete" ticked, so the response exists before the next action runs
+- Save response headers in a dictionary variable → new local variable `h`
+- Save HTTP response in string variable → new local variable `resp` (not used by the macro, but
+  handy when something needs diagnosing)
+
+**Action 2** — Messaging, Send SMS
+- Number `{lv=h[x-sms-to]}`
+- Message `{lv=h[x-sms-text]}`
+- "Pre-populate (Don't Send)" **unticked**, or it only opens the composer
+- Constraint: MacroDroid Variable, `h[x-sms-to]` **contains** `639`
+
+**Action 3** — Web Interactions, HTTP Request
+- Method `GET`
+- URL `<address>?action=done&id={lv=h[x-sms-id]}&ok=1&device=shop-phone&token=<token>`
+- Same constraint: `h[x-sms-to]` contains `639`
+
+The constraint is the whole of the "is there anything to send" logic. When the queue is empty the
+server returns an empty `X-Sms-To`, which does not contain `639`, so actions 2 and 3 are skipped
+and the macro costs one small request a minute and nothing else.
+
+### Two phone settings that are not optional
+
+Both are the usual reason a working gateway quietly stops after a day or two:
+
+- MacroDroid must hold the **SMS permission**. Android revokes it if it is only granted "while in
+  use", so grant it outright.
+- MacroDroid must be **excluded from battery optimisation**, and on Xiaomi also set to Autostart
+  with no background restriction.
+
+### Checking it is alive
+
+Settings → Shop handset in the admin shows **last heard from** and the queue counts. If the phone
+is polling, that timestamp is never more than a minute or two old.
