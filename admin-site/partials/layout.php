@@ -55,6 +55,20 @@ function admin_base(): string
 }
 
 /** A URL for a file under the shared assets folder. */
+/**
+ * URL for a stored picture, from the relative path kept in the database.
+ *
+ * The rows hold paths like "assets/img/products/mocha.svg". Building a URL by
+ * gluing that onto the admin's own base gives /admin-site/assets/... which is
+ * wrong wherever assets are served from somewhere else, as they are on the
+ * live site: the picture 404s and the row shows a broken image. Going through
+ * admin_asset() means ASSETS_URL is respected like everywhere else.
+ */
+function admin_picture(string $storedPath): string
+{
+    return admin_asset(preg_replace('#^/?assets/#', '', trim($storedPath)) ?? $storedPath);
+}
+
 function admin_asset(string $path): string
 {
     // assets/ is shared with the customer site, so it may sit outside this

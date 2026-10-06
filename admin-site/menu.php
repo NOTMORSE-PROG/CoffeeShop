@@ -710,7 +710,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                 <td class="pic-col">
                   <?php if (!empty($product['image_path'])): ?>
                     <img class="menu-thumb"
-                         src="<?= e(admin_base() . '/' . ltrim((string) $product['image_path'], '/')) ?>"
+                         src="<?= e(admin_picture((string) $product['image_path'])) ?>"
                          alt="" width="44" height="44" loading="lazy">
                   <?php else: ?>
                     <span class="menu-thumb menu-thumb-empty" aria-hidden="true">
@@ -838,7 +838,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
               <div class="picture-preview">
                 <?php if ($currentImage !== ''): ?>
                   <img data-picture-preview
-                       src="<?= e(admin_base() . '/' . ltrim($currentImage, '/')) ?>"
+                       src="<?= e(admin_picture($currentImage)) ?>"
                        alt="Current picture for this item" width="96" height="96">
                 <?php else: ?>
                   <img data-picture-preview hidden src="" alt="" width="96" height="96">
