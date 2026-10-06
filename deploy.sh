@@ -100,18 +100,35 @@ done
 sent=0
 failed=0
 
+retried=0
+
+# Three attempts per file, backing off a little between them. The host drops a
+# connection now and then and takes a different file each run, so a single
+# attempt makes an otherwise good deploy look broken.
+put() {
+    local f="$1" try
+    for try in 1 2 3; do
+        if curl -s --insecure --max-time 120 -u "$AUTH" -T "$f" "$SFTP${DEPLOY_PATH}/$f" >/dev/null 2>&1; then
+            [ "$try" -gt 1 ] && retried=$((retried + 1))
+            return 0
+        fi
+        sleep "$try"
+    done
+    return 1
+}
+
 for f in "${FILES[@]}"; do
-    if curl -s --insecure --max-time 120 -u "$AUTH" -T "$f" "$SFTP${DEPLOY_PATH}/$f" >/dev/null 2>&1; then
+    if put "$f"; then
         sent=$((sent + 1))
         printf '\r  uploaded %d/%d' "$sent" "${#FILES[@]}"
     else
         failed=$((failed + 1))
-        printf '\n  FAILED: %s\n' "$f" >&2
+        printf '\n  FAILED after 3 tries: %s\n' "$f" >&2
     fi
 done
 
 printf '\n'
-say "sent ${sent}, failed ${failed}"
+say "sent ${sent}, failed ${failed}${retried:+ (${retried} needed a retry)}"
 
 [ "$failed" -gt 0 ] && { echo "Some files did not upload. Fix those before testing." >&2; exit 1; }
 

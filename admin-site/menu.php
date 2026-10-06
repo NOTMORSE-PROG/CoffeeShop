@@ -497,6 +497,17 @@ $filterQuery = array_filter([
 
 $hasFilters = $filterQuery !== [];
 
+/*
+ * The list as it currently stands, for the Edit links and for coming back out
+ * of an edit. Without this a round trip through the form threw away whatever
+ * search, category or state filter was set, and dropped the person back at the
+ * top of an unfiltered list.
+ */
+$listUrl = admin_url('menu.php') . ($filterQuery !== [] ? '?' . http_build_query($filterQuery) : '');
+$editUrl = static function (string $key, int $id) use ($filterQuery): string {
+    return admin_url('menu.php') . '?' . http_build_query($filterQuery + [$key => $id]);
+};
+
 $editCategory = null;
 if (get_int('edit_category') > 0) {
     $editCategory = db_one('SELECT * FROM categories WHERE id = ? LIMIT 1', [get_int('edit_category')]);
@@ -525,7 +536,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
      */
     ?>
     <div class="card-body" id="category-form">
-      <details class="form-fold"<?= $editCategory ? ' open' : '' ?>>
+      <details class="form-fold"<?= $editCategory ? ' open' : '' ?>
+               <?= $editCategory ? 'data-edit-modal="Edit category"' : '' ?>>
         <summary><?= $editCategory ? 'Edit category' : 'Add a category' ?></summary>
 
       <form method="post" action="<?= e(admin_url('menu.php')) ?>">
@@ -562,7 +574,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                     fold, and opening it to add a category used to leave no way to
                     shut it again. The link closes the fold through the script, and
                     reloads the page without it, which closes the fold too. */ ?>
-          <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>"
+          <a class="btn btn-sm btn-secondary" href="<?= e($listUrl) ?>"
              data-fold-cancel>Cancel</a>
         </div>
       </form>
@@ -601,7 +613,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
 
               <span class="cat-actions">
                 <a class="btn btn-sm btn-ghost"
-                   href="<?= e(admin_url('menu.php')) ?>?edit_category=<?= (int) $category['id'] ?>#category-form">Edit</a>
+                   href="<?= e($editUrl('edit_category', (int) $category['id'])) ?>#category-form">Edit</a>
 
                 <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
                   <?= csrf_field() ?>
@@ -635,7 +647,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
     </div>
 
     <div class="card-body menu-actions" id="product-form">
-      <details class="form-fold"<?= $editProduct ? ' open' : '' ?>>
+      <details class="form-fold"<?= $editProduct ? ' open' : '' ?>
+               <?= $editProduct ? 'data-edit-modal="Edit menu item"' : '' ?>>
         <summary><?= $editProduct ? 'Edit menu item' : 'Add a menu item' ?></summary>
 
       <?php if ($categories === []): ?>
@@ -724,16 +737,15 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
               </div>
             </div>
 
-            <details class="picture-advanced">
-              <summary>Or point at a file already in the project</summary>
-              <input class="input mt-2" type="text" id="product_image" name="image_path" maxlength="255"
-                     placeholder="assets/img/products/mocha.svg"
-                     value="<?= e($currentImage) ?>">
-              <p class="hint">
-                A relative path inside the project. This is how the drink art that ships with
-                the system is referenced. Uploading a picture above replaces whatever is here.
-              </p>
-            </details>
+            <?php
+            /*
+             * Carried, not shown. The picture an item already has is a path,
+             * and without this an edit that does not touch the picture would
+             * post an empty one and wipe it. The owner uploads a picture or
+             * removes it; where the file sits is not their concern.
+             */
+            ?>
+            <input type="hidden" name="image_path" value="<?= e($currentImage) ?>">
           </div>
 
           <div class="choice-group choice-group-2 mb-4">
@@ -760,7 +772,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
             <button type="submit" class="btn btn-sm" data-busy-label="Saving">
               <?= $editProduct ? 'Save changes' : 'Add item' ?>
             </button>
-            <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>"
+            <a class="btn btn-sm btn-secondary" href="<?= e($listUrl) ?>"
                data-fold-cancel>Cancel</a>
           </div>
         </form>
@@ -823,7 +835,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
             <?= admin_icon('icon-plus', 'icon-sm') ?> Add these items
           </button>
 
-          <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>"
+          <a class="btn btn-sm btn-secondary" href="<?= e($listUrl) ?>"
              data-fold-cancel>Cancel</a>
         </div>
 
@@ -942,7 +954,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                 </td>
                 <td class="right nowrap">
                   <a class="btn btn-sm btn-ghost"
-                     href="<?= e(admin_url('menu.php')) ?>?edit_product=<?= (int) $product['id'] ?>#product-form">Edit</a>
+                     href="<?= e($editUrl('edit_product', (int) $product['id'])) ?>#product-form">Edit</a>
 
                   <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
                     <?= csrf_field() ?>

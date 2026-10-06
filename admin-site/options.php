@@ -34,7 +34,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $name      = clean_text(post_string('name'), 80);
         $selection = post_string('selection_type') === 'multiple' ? 'multiple' : 'single';
         $required  = isset($_POST['is_required']) ? 1 : 0;
-        $sort      = (int) ($_POST['sort_order'] ?? 0);
 
         $before = $id > 0 ? db_one('SELECT * FROM option_groups WHERE id = ? LIMIT 1', [$id]) : null;
 
@@ -44,14 +43,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             flash('error', 'That group no longer exists.');
         } elseif ($before !== null) {
             db_query(
-                'UPDATE option_groups SET name = ?, selection_type = ?, is_required = ?, sort_order = ? WHERE id = ?',
-                [$name, $selection, $required, $sort, $id]
+                'UPDATE option_groups SET name = ?, selection_type = ?, is_required = ? WHERE id = ?',
+                [$name, $selection, $required, $id]
             );
 
             [$old, $new] = audit_diff(
                 $before,
-                ['name' => $name, 'selection_type' => $selection, 'is_required' => $required, 'sort_order' => $sort],
-                ['name', 'selection_type', 'is_required', 'sort_order']
+                ['name' => $name, 'selection_type' => $selection, 'is_required' => $required],
+                ['name', 'selection_type', 'is_required']
             );
 
             audit('option_group.updated', 'option_group', $id, 'Edited the option group ' . $name,
@@ -59,9 +58,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
             flash('success', $name . ' updated.');
         } else {
+            // Onto the end of the list, where someone adding a group expects
+            // it rather than tied for first place with everything on zero.
+            $nextSort = (int) db_value('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM option_groups');
+
             $newId = db_insert(
                 'INSERT INTO option_groups (name, selection_type, is_required, sort_order) VALUES (?, ?, ?, ?)',
-                [$name, $selection, $required, $sort]
+                [$name, $selection, $required, $nextSort]
             );
 
             audit('option_group.created', 'option_group', $newId, 'Added the option group ' . $name,
@@ -101,7 +104,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $name    = clean_text(post_string('name'), 80);
         $delta   = round((float) str_replace(',', '', post_string('price_delta', '0')), 2);
         $default = isset($_POST['is_default']) ? 1 : 0;
-        $sort    = (int) ($_POST['sort_order'] ?? 0);
 
         $group  = db_one('SELECT * FROM option_groups WHERE id = ? LIMIT 1', [$groupId]);
         $before = $id > 0 ? db_one('SELECT * FROM options WHERE id = ? LIMIT 1', [$id]) : null;
@@ -115,17 +117,22 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         } elseif ($id > 0 && $before === null) {
             flash('error', 'That choice no longer exists.');
         } else {
-            db_transaction(function () use ($id, $groupId, $name, $delta, $default, $sort, $group, $before, $adminId) {
+            db_transaction(function () use ($id, $groupId, $name, $delta, $default, $group, $before, $adminId) {
                 if ($before !== null) {
                     db_query(
-                        'UPDATE options SET name = ?, price_delta = ?, is_default = ?, sort_order = ? WHERE id = ?',
-                        [$name, $delta, $default, $sort, $id]
+                        'UPDATE options SET name = ?, price_delta = ?, is_default = ? WHERE id = ?',
+                        [$name, $delta, $default, $id]
                     );
                     $optionId = $id;
                 } else {
+                    $nextSort = (int) db_value(
+                        'SELECT COALESCE(MAX(sort_order), 0) + 1 FROM options WHERE group_id = ?',
+                        [$groupId]
+                    );
+
                     $optionId = db_insert(
                         'INSERT INTO options (group_id, name, price_delta, is_default, sort_order) VALUES (?, ?, ?, ?, ?)',
-                        [$groupId, $name, $delta, $default, $sort]
+                        [$groupId, $name, $delta, $default, $nextSort]
                     );
                 }
 
@@ -389,13 +396,6 @@ admin_header(
             </select>
           </div>
 
-          <div class="field">
-            <label class="label" for="group_sort">Position</label>
-            <input class="input tabular" type="number" id="group_sort" name="sort_order"
-                   value="<?= (int) ($editGroup['sort_order'] ?? 0) ?>">
-            <p class="hint">Low numbers first. This decides whether the customer picks Size or
-              Sugar Level first.</p>
-          </div>
         </div>
 
         <label class="choice">
@@ -524,13 +524,6 @@ admin_header(
               <p class="hint">0 for no extra charge.</p>
             </div>
 
-            <div class="field">
-              <label class="label" for="option_sort">Position</label>
-              <input class="input tabular" type="number" id="option_sort" name="sort_order"
-                     value="<?= (int) ($editOption['sort_order'] ?? 0) ?>">
-              <p class="hint">Low numbers first. This is what puts Regular before Large, and
-                25% before 50%.</p>
-            </div>
           </div>
 
           <label class="choice">

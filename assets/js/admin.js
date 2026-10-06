@@ -934,4 +934,112 @@
     });
   })();
 
+  /* --- Editing happens in a dialog --------------------------------------------
+     Clicking Edit on a row used to reload the page and expand a fold in a
+     different card, so the form appeared somewhere unrelated to the row that
+     was clicked.
+
+     The server still renders the form in that fold, which is what keeps this
+     working with scripting off. Here the rendered form is MOVED into a dialog
+     rather than rebuilt: moving a node carries its listeners with it, so the
+     picture preview and everything else keep working untouched.             */
+
+  (function editInDialog() {
+    var fold = document.querySelector('[data-edit-modal]');
+    if (!fold) return;
+
+    var form = fold.querySelector('form');
+    if (!form || !window.HTMLDialogElement) return;
+
+    var dialog = document.createElement('dialog');
+    dialog.className = 'modal modal-wide';
+
+    var card = document.createElement('div');
+    card.className = 'modal-card';
+
+    var title = document.createElement('h2');
+    title.className = 'modal-title';
+    title.textContent = fold.getAttribute('data-edit-modal');
+
+    var scroll = document.createElement('div');
+    scroll.className = 'modal-scroll';
+
+    // Outside the form, so it cannot be mistaken for a submit button. It is
+    // the same leave-without-saving as Cancel at the bottom, within reach when
+    // the form is long enough to have scrolled past it.
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'modal-close';
+    close.setAttribute('aria-label', 'Close without saving');
+    close.textContent = '\u00d7';
+    close.addEventListener('click', function () { dialog.close(); });
+
+    card.appendChild(close);
+    card.appendChild(title);
+    card.appendChild(scroll);
+    dialog.appendChild(card);
+    document.body.appendChild(dialog);
+
+    // The move. Everything bound to the form comes with it.
+    scroll.appendChild(form);
+
+    // The fold is empty now, and leaving it open would show an empty panel
+    // behind the dialog.
+    fold.open = false;
+
+    /*
+     * Leaving goes back to the list rather than only hiding the dialog. The
+     * address still says edit_product=N, so without this a reload would bring
+     * the form straight back and Esc would look like it had done nothing.
+     *
+     * The Cancel button inside the form is a link to that same list URL, so it
+     * navigates on its own and this never has to run for it.
+     */
+    var leaving = false;
+    var backTo = form.querySelector('[data-fold-cancel]');
+    var listUrl = backTo ? backTo.getAttribute('href') : window.location.pathname;
+
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog) dialog.close();
+    });
+
+    dialog.addEventListener('close', function () {
+      if (leaving) return;
+      leaving = true;
+      window.location.href = listUrl;
+    });
+
+    // A submit leaves the page by itself; do not race it with the close
+    // handler's navigation.
+    form.addEventListener('submit', function () { leaving = true; });
+
+    /*
+     * The fragment is for the no-script case, where it jumps to the form in
+     * the page. Here the form is in the dialog, so all the fragment still does
+     * is make the browser reset focus once the page finishes loading. Taking
+     * it off the address is more reliable than trying to focus after it.
+     */
+    if (window.history && history.replaceState && /#(product|category)-form$/.test(window.location.hash ? '#' + window.location.hash.slice(1) : '')) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
+    dialog.showModal();
+
+    var first = form.querySelector('input:not([type="hidden"]):not([readonly]), select, textarea');
+
+    if (first) {
+      var land = function () { if (document.activeElement !== first) first.focus(); };
+
+      land();
+
+      // replaceState does not cancel work the browser already has queued, so
+      // confirm it once loading is done.
+      if (document.readyState === 'complete') {
+        window.requestAnimationFrame(land);
+      } else {
+        window.addEventListener('load', function () { window.requestAnimationFrame(land); });
+      }
+    }
+  })();
+
 })();

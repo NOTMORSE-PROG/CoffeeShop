@@ -103,6 +103,15 @@
     var title = document.createElement('h2');
     title.className = 'modal-title';
 
+    // Visible way out, for a phone with no Esc key and for anyone who does
+    // not know the backdrop can be clicked.
+    var close = document.createElement('button');
+    close.type = 'submit';
+    close.value = 'cancel';
+    close.className = 'modal-close';
+    close.setAttribute('aria-label', 'Close');
+    close.textContent = '\u00d7';
+
     var body = document.createElement('p');
     body.className = 'modal-body';
 
@@ -122,6 +131,7 @@
 
     actions.appendChild(cancel);
     actions.appendChild(go);
+    form.appendChild(close);
     form.appendChild(title);
     form.appendChild(body);
     form.appendChild(actions);

@@ -81,6 +81,19 @@ function asset_version(string $path): string
 
     if (!array_key_exists($path, $stamps)) {
         $full = APP_ROOT . '/assets/' . ltrim($path, '/');
+
+        /*
+         * filemtime() is answered from the stat cache, which can be well over
+         * a minute stale. A stale stamp here is worse than no stamp at all:
+         * the URL stays the same after the file has changed, so browsers keep
+         * the copy they already have and the change appears not to have
+         * happened. That bites hardest straight after a deploy.
+         *
+         * Cleared for this one path only, and only once per file per request,
+         * because $stamps remembers the answer either way.
+         */
+        clearstatcache(true, $full);
+
         $time = is_file($full) ? filemtime($full) : false;
         $stamps[$path] = $time === false ? '' : (string) $time;
     }

@@ -581,3 +581,58 @@
   .modal-actions { flex-direction: column-reverse; }
   .modal-actions .btn { width: 100%; }
 }
+
+/* A form is not a question: it needs room, and on a short screen it needs to
+   scroll inside the dialog rather than running off the bottom of it. The
+   heading stays put while the body moves. */
+.modal-wide { width: min(46rem, calc(100vw - 2rem)); }
+
+.modal-wide .modal-card {
+  max-height: min(42rem, calc(100vh - 4rem));
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.modal-scroll {
+  overflow-y: auto;
+  padding-right: var(--space-2);
+  margin-right: calc(var(--space-2) * -1);
+}
+
+/* The form inside came out of a card, where it had the card's padding around
+   it. In here the dialog provides that. */
+.modal-scroll > form { margin: 0; }
+
+/* Top right of the dialog, out of the flow so it does not push the heading
+   around or change the gap under it. */
+.modal-card { position: relative; }
+
+.modal-close {
+  position: absolute;
+  /* Inside the card's own padding. Hanging it outside put it under the
+     dialog's rounded corner, which clipped it and widened the card enough to
+     raise a horizontal scrollbar. */
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--accent);
+  background: var(--bg-sunken);
+}
+
+.modal-close:focus-visible { box-shadow: var(--ring); outline: none; }
+
+/* Room for it, so a long heading does not run underneath. */
+.modal-title { padding-right: 2rem; }
