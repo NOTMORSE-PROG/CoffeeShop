@@ -937,6 +937,132 @@
     });
   })();
 
+  /* --- Actions that do not throw the page away ---------------------------------
+     Hide, Show and Delete were ordinary posts, so each one reloaded: a white
+     flash, the scroll position gone, the list rebuilt under the pointer.
+
+     The post still happens and the server still decides what the list looks
+     like afterwards. The difference is that its answer is fetched rather than
+     navigated to, and only the region named by data-live-form is swapped.
+     Because the post redirects to the list and fetch follows redirects, the
+     body that comes back is the updated page itself - so there is no second
+     copy of "what this action does" in here to drift out of step with PHP.
+
+     Without scripting, or if anything at all goes wrong, the form posts
+     normally and the page reloads exactly as it used to.                    */
+
+  (function liveActions() {
+    if (!window.fetch || !window.FormData || !window.DOMParser) return;
+
+    var busy = false;
+
+    // Same shadowing trap as form.action: a control named "submit" would hide
+    // the method. Going through the prototype cannot be shadowed.
+    function realSubmit(form) {
+      HTMLFormElement.prototype.submit.call(form);
+    }
+
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (!form.matches || !form.matches('[data-live-form]')) return;
+
+      var region = document.querySelector(form.getAttribute('data-live-form'));
+      if (!region) return;
+
+      if (busy) { event.preventDefault(); return; }
+
+      event.preventDefault();
+      busy = true;
+      region.classList.add('is-busy');
+
+      /*
+       * getAttribute, not form.action. Every one of these forms has an
+       * <input name="action">, and a named control shadows the form property
+       * of the same name, so form.action is that input, not the URL.
+       */
+      fetch(form.getAttribute('action'), {
+        method: 'POST',
+        body: new FormData(form),
+        credentials: 'same-origin',
+        redirect: 'follow',
+        headers: { 'X-Requested-With': 'fetch' }
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error('bad response');
+
+          // The URL as well as the body: fetch follows the redirect, so this
+          // is where the post actually landed, which is what decides whether
+          // the list has to be fetched again.
+          return response.text().then(function (html) {
+            return { html: html, url: response.url };
+          });
+        })
+        .then(function (result) {
+          var doc = new DOMParser().parseFromString(result.html, 'text/html');
+
+          // Not the shape we expected - a session that timed out and gave us
+          // the sign-in page, say. Let the browser do it properly.
+          if (!doc.querySelector('[data-live-region]')) {
+            realSubmit(form);
+            return;
+          }
+
+          /*
+           * The message comes from the response, because the redirect that
+           * produced it is what consumed the flash.
+           */
+          var flash = doc.querySelector('[data-flash]');
+
+          if (flash && window.OurCoffee) {
+            var kind = flash.getAttribute('data-flash');
+            var variant = kind === 'success' ? 'success'
+              : (kind === 'error' || kind === 'danger') ? 'error' : '';
+            var text = (flash.textContent || '').replace(/\s+/g, ' ').trim();
+
+            if (text) window.OurCoffee.toast(text, variant, variant === 'error' ? 7000 : 3200);
+          }
+
+          /*
+           * The list comes from where the person actually is. These posts
+           * redirect to the bare list, so using the response for both would
+           * replace a filtered table with the unfiltered first page while the
+           * address still said otherwise. Only fetched again when the two
+           * differ, so the plain case stays at one request.
+           */
+          var here = window.location.href;
+
+          if (result.url && result.url.split('#')[0] === here.split('#')[0]) {
+            region.innerHTML = doc.querySelector('[data-live-region]').innerHTML;
+            return;
+          }
+
+          return fetch(here, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+            .then(function (response) {
+              if (!response.ok) throw new Error('bad response');
+              return response.text();
+            })
+            .then(function (listHtml) {
+              var listDoc = new DOMParser().parseFromString(listHtml, 'text/html');
+              var fresh = listDoc.querySelector('[data-live-region]');
+
+              if (!fresh) {
+                window.location.href = here;
+                return;
+              }
+
+              region.innerHTML = fresh.innerHTML;
+            });
+        })
+        .catch(function () {
+          realSubmit(form);
+        })
+        .then(function () {
+          busy = false;
+          region.classList.remove('is-busy');
+        });
+    });
+  })();
+
   /* --- Editing happens in a dialog --------------------------------------------
      Clicking Edit used to reload the page: the server rendered the form into
      a fold somewhere else on the page, and the script lifted it out of there.

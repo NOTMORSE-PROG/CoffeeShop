@@ -522,7 +522,7 @@ admin_head('Menu');
 admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' items.');
 ?>
 
-<div class="menu-grid">
+<div class="menu-grid" id="menu-live" data-live-region>
 
   <!-- ----------------------------------------------------------- categories -->
   <section class="card">
@@ -616,7 +616,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                    href="<?= e($editUrl('edit_category', (int) $category['id'])) ?>#category-form"
                    data-edit-dialog="Edit category" data-edit-from="#category-form">Edit</a>
 
-                <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
+                <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard
+                        data-live-form="#menu-live">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="category_delete">
                   <input type="hidden" name="id" value="<?= (int) $category['id'] ?>">
@@ -959,7 +960,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                      href="<?= e($editUrl('edit_product', (int) $product['id'])) ?>#product-form"
                      data-edit-dialog="Edit menu item" data-edit-from="#product-form">Edit</a>
 
-                  <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
+                  <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard
+                        data-live-form="#menu-live">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="product_availability">
                     <input type="hidden" name="id" value="<?= (int) $product['id'] ?>">
@@ -968,7 +970,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                     </button>
                   </form>
 
-                  <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
+                  <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard
+                        data-live-form="#menu-live">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="product_delete">
                     <input type="hidden" name="id" value="<?= (int) $product['id'] ?>">
@@ -984,7 +987,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
         </table>
       </div>
 
-      <form class="batch-bar" data-batch-bar hidden id="batch-delete-form"
+      <form class="batch-bar" data-batch-bar hidden id="batch-delete-form" data-live-form="#menu-live"
             method="post" action="<?= e(admin_url('menu.php')) ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="product_batch_delete">

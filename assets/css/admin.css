@@ -1331,3 +1331,15 @@
 }
 
 .menu-grid tbody tr.is-hidden .menu-item-name { font-weight: 600; }
+
+/* While a Hide, Show or Delete is in flight. Enough to show something is
+   happening on a slow connection, not so much that the list appears to
+   disappear and come back - the whole point is that it does not flash. */
+[data-live-region].is-busy {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+/* The Edit link while its form is being fetched. */
+a.is-busy { opacity: 0.5; pointer-events: none; }
