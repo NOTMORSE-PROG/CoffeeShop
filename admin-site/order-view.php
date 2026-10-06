@@ -140,7 +140,7 @@ admin_header(
   </a>
 </p>
 
-<div class="order-grid">
+<div class="order-grid" id="order-live" data-live-region>
 
   <!-- What the order is. -->
   <div class="order-main">
@@ -248,7 +248,7 @@ admin_header(
         <div class="row">
           <span class="small subtle"><?= count($smsHistory) ?> message<?= count($smsHistory) === 1 ? '' : 's' ?></span>
           <?php if (!in_array($status, ['completed', 'cancelled'], true) || $smsHistory !== []): ?>
-            <form method="post" action="<?= e(admin_url('order-view.php')) ?>">
+            <form method="post" action="<?= e(admin_url('order-view.php')) ?>" data-live-form="#order-live">
               <?= csrf_field() ?>
               <input type="hidden" name="action" value="resend_sms">
               <input type="hidden" name="id" value="<?= (int) $order['id'] ?>">
@@ -315,7 +315,7 @@ admin_header(
             This order is <?= e(status_label($status, (string) $order['order_type'])) ?>. There is nothing further to change.
           </p>
         <?php else: ?>
-          <form method="post" action="<?= e(admin_url('order-view.php')) ?>" class="stack">
+          <form method="post" action="<?= e(admin_url('order-view.php')) ?>" class="stack" data-live-form="#order-live">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="status">
             <input type="hidden" name="id" value="<?= (int) $order['id'] ?>">
@@ -424,7 +424,7 @@ admin_header(
             </div>
           </div>
 
-          <form method="post" action="<?= e(admin_url('order-view.php')) ?>">
+          <form method="post" action="<?= e(admin_url('order-view.php')) ?>" data-live-form="#order-live">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="payment">
             <input type="hidden" name="id" value="<?= (int) $order['id'] ?>">

@@ -1059,6 +1059,24 @@
         .then(function () {
           busy = false;
           region.classList.remove('is-busy');
+
+          /*
+           * The shared double-submit guard disables the submit button and
+           * relies on the page going away to bring it back. These forms no
+           * longer navigate, so without this the button stays dead after one
+           * use. The button may well have been replaced by the swap, which is
+           * why it is looked up again rather than held onto.
+           */
+          var button = document.querySelector('[data-live-form] [type="submit"][disabled]');
+
+          while (button) {
+            button.disabled = false;
+
+            var label = button.getAttribute('data-idle-label');
+            if (label) button.textContent = label;
+
+            button = document.querySelector('[data-live-form] [type="submit"][disabled]');
+          }
         });
     });
   })();

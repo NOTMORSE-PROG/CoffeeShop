@@ -416,6 +416,13 @@
   min-width: 0;
 }
 
+/* The columns already refuse to be pushed wider than their share, but a card
+   defaults to min-width:auto, so one holding a table stayed at the table's
+   min-content width and hung a pixel off the side of a 390px screen. The
+   table has its own scrolling wrapper to fall back on. */
+.order-main > .card,
+.order-side > .card { min-width: 0; }
+
 @media (max-width: 960px) {
   .order-grid { grid-template-columns: minmax(0, 1fr); }
 

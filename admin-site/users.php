@@ -184,7 +184,7 @@ admin_header(
 );
 ?>
 
-<div class="users-grid">
+<div class="users-grid" id="users-live" data-live-region>
 
   <section class="card">
     <div class="card-header">
@@ -249,7 +249,8 @@ admin_header(
                    href="<?= e(admin_url('users.php')) ?>?edit=<?= (int) $user['id'] ?>#user-form">Edit</a>
 
                 <?php if (!$isSelf): ?>
-                  <form method="post" action="<?= e(admin_url('users.php')) ?>" class="inline-form">
+                  <form method="post" action="<?= e(admin_url('users.php')) ?>" class="inline-form"
+                        data-live-form="#users-live">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="user_active">
                     <input type="hidden" name="user_id" value="<?= (int) $user['id'] ?>">

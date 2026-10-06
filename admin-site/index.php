@@ -78,7 +78,7 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
   </div>
 </section>
 
-<section class="card queue-card">
+<section class="card queue-card" id="queue-live" data-live-region>
   <div class="card-header">
     <h2>Order queue</h2>
     <p class="small subtle mb-0" data-queue-updated>Updating every 15 seconds</p>
@@ -109,7 +109,8 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
 
           <div class="queue-actions">
             <?php foreach ($row['next_statuses'] as $next): ?>
-              <form method="post" action="<?= e(admin_url('index.php')) ?>" data-no-guard>
+              <form method="post" action="<?= e(admin_url('index.php')) ?>" data-no-guard
+                    data-live-form="#queue-live">
                 <?= csrf_field() ?>
                 <input type="hidden" name="order_id" value="<?= (int) $row['id'] ?>">
                 <input type="hidden" name="status" value="<?= e($next['status']) ?>">

@@ -294,7 +294,7 @@ admin_header(
 );
 ?>
 
-<div class="options-grid">
+<div class="options-grid" id="options-live" data-live-region>
 
   <!-- Groups -->
   <section class="card">
@@ -349,7 +349,8 @@ admin_header(
                   <a class="btn btn-sm btn-secondary"
                      href="<?= e(admin_url('options.php')) ?>?group=<?= (int) $group['id'] ?>&edit_group=<?= (int) $group['id'] ?>#group-form"
                      data-edit-dialog="Edit group" data-edit-from="#group-form">Edit</a>
-                  <form method="post" action="<?= e(admin_url('options.php')) ?>" class="inline-form">
+                  <form method="post" action="<?= e(admin_url('options.php')) ?>" class="inline-form"
+                        data-live-form="#options-live">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="group_delete">
                     <input type="hidden" name="id" value="<?= (int) $group['id'] ?>">
@@ -482,7 +483,8 @@ admin_header(
                     <a class="btn btn-sm btn-secondary"
                        href="<?= e(admin_url('options.php')) ?>?group=<?= $selectedId ?>&edit_option=<?= (int) $option['id'] ?>#option-form"
                        data-edit-dialog="Edit choice" data-edit-from="#option-form">Edit</a>
-                    <form method="post" action="<?= e(admin_url('options.php')) ?>" class="inline-form">
+                    <form method="post" action="<?= e(admin_url('options.php')) ?>" class="inline-form"
+                        data-live-form="#options-live">
                       <?= csrf_field() ?>
                       <input type="hidden" name="action" value="option_delete">
                       <input type="hidden" name="id" value="<?= (int) $option['id'] ?>">
