@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/partials/layout.php';
+require_once dirname(__DIR__) . '/shared/uploads.php';
 
 start_session();
 send_security_headers();
@@ -215,6 +216,56 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         redirect('settings.php#handset');
     }
 
+    /*
+     * The GCash QR, which the owner uploads rather than types a path to.
+     *
+     * Handled before the ordinary settings, and on its own, because a picture
+     * that fails to upload should not quietly take a page of text edits down
+     * with it. The stored value is still just a relative path, so the
+     * checkout page needs no changes: it already renders whatever path it
+     * finds and falls back to "not uploaded yet" when the file is missing.
+     */
+    $qrCurrent = trim((string) setting('gcash_qr_path', ''));
+    $qrChanged = false;
+
+    if (isset($_POST['gcash_qr_remove'])) {
+        if (is_uploaded_image($qrCurrent)) {
+            delete_uploaded_image($qrCurrent);
+        }
+
+        set_setting('gcash_qr_path', '');
+
+        audit('settings.updated', 'settings', 'gcash_qr_path',
+            'Removed the GCash QR picture', ['gcash_qr_path' => $qrCurrent],
+            ['gcash_qr_path' => ''], (int) $admin['id']);
+
+        flash('success', 'GCash QR removed.');
+        redirect('settings.php');
+    }
+
+    $qrUpload = handle_image_upload($_FILES['gcash_qr'] ?? null);
+
+    if (!$qrUpload['ok']) {
+        flash('error', (string) $qrUpload['error']);
+        redirect('settings.php');
+    }
+
+    if (empty($qrUpload['skipped'])) {
+        // Only ever removes a file this system put there, never the artwork
+        // that ships with it.
+        if ($qrCurrent !== '' && $qrCurrent !== $qrUpload['path'] && is_uploaded_image($qrCurrent)) {
+            delete_uploaded_image($qrCurrent);
+        }
+
+        set_setting('gcash_qr_path', (string) $qrUpload['path']);
+
+        audit('settings.updated', 'settings', 'gcash_qr_path',
+            'Uploaded a new GCash QR picture', ['gcash_qr_path' => $qrCurrent],
+            ['gcash_qr_path' => $qrUpload['path']], (int) $admin['id']);
+
+        $qrChanged = true;
+    }
+
     $posted  = is_array($_POST['settings'] ?? null) ? $_POST['settings'] : [];
     $current = all_settings();
 
@@ -298,7 +349,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
     }
 
-    if ($new === []) {
+    if ($new === [] && $qrChanged) {
+        flash('success', 'GCash QR updated.');
+    } elseif ($new === []) {
         flash('info', 'Nothing was changed.');
     } else {
         audit(
@@ -311,7 +364,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             (int) $admin['id']
         );
 
-        flash('success', count($new) === 1 ? 'One setting saved.' : count($new) . ' settings saved.');
+        flash('success', (count($new) === 1 ? 'One setting saved.' : count($new) . ' settings saved.')
+            . ($qrChanged ? ' GCash QR updated.' : ''));
     }
 
     redirect('settings.php');
@@ -323,7 +377,7 @@ admin_head('Settings');
 admin_header('Settings', 'Only the owner can change these.');
 ?>
 
-<form method="post" action="<?= e(admin_url('settings.php')) ?>">
+<form method="post" action="<?= e(admin_url('settings.php')) ?>" enctype="multipart/form-data">
   <?= csrf_field() ?>
 
   <?php
@@ -367,7 +421,48 @@ admin_header('Settings', 'Only the owner can change these.');
             $inputId = 'setting_' . $key;
             ?>
 
-            <?php if ($type === 'bool'): ?>
+            <?php if ($key === 'gcash_qr_path'): ?>
+              <?php
+              /*
+               * An upload, not a path. The owner has the QR as a picture on
+               * their phone; asking them to put the file somewhere and type
+               * where it went is asking them to do the computer's job.
+               */
+              $qrFile = $value !== '' ? APP_ROOT . '/' . ltrim($value, '/') : '';
+              $qrHere = $qrFile !== '' && is_file($qrFile);
+              ?>
+              <div class="field">
+                <span class="label"><?= e($label) ?></span>
+
+                <div class="qr-field">
+                  <div class="qr-preview">
+                    <?php if ($qrHere): ?>
+                      <img src="<?= e(admin_picture($value)) ?>" alt="The GCash QR currently shown at checkout"
+                           width="104" height="104">
+                    <?php else: ?>
+                      <span class="qr-empty"><?= admin_icon('icon-alert', 'icon-sm') ?> None yet</span>
+                    <?php endif; ?>
+                  </div>
+
+                  <div class="qr-controls">
+                    <input class="input" type="file" id="<?= e($inputId) ?>" name="gcash_qr"
+                           accept="image/jpeg,image/png,image/gif,image/webp">
+                    <p class="hint">
+                      A screenshot of your GCash QR is fine. JPG, PNG, GIF or WebP, up to 2 MB.
+                      <?= $qrHere ? 'Choosing a new one replaces the current picture.' : '' ?>
+                    </p>
+
+                    <?php if ($qrHere): ?>
+                      <label class="choice choice-sm">
+                        <input type="checkbox" name="gcash_qr_remove" value="1">
+                        <span><span class="choice-title">Remove the current QR</span></span>
+                      </label>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              </div>
+
+            <?php elseif ($type === 'bool'): ?>
               <label class="choice mb-4" for="<?= e($inputId) ?>">
                 <input type="hidden" name="settings[<?= e($key) ?>]" value="0">
                 <input type="checkbox" id="<?= e($inputId) ?>" name="settings[<?= e($key) ?>]" value="1"
