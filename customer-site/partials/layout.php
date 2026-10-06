@@ -163,7 +163,7 @@ function customer_head(string $title, string $description = '', string $bodyClas
 <?php
     foreach (take_flashes() as $flash) {
         printf(
-            '<div class="container"><div class="alert alert-%s" data-autodismiss="7000">%s</div></div>',
+            '<div class="container"><div class="alert alert-%1$s" data-flash="%1$s" data-autodismiss="7000">%2$s</div></div>',
             e($flash['type']),
             e($flash['message'])
         );

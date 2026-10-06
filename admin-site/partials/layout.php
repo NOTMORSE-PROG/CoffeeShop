@@ -177,7 +177,14 @@ function admin_flashes(): void
         $type = in_array($flash['type'], $allowed, true) ? $flash['type'] : 'info';
         $dismiss = in_array($type, ['success', 'info'], true) ? ' data-autodismiss="7000"' : '';
 
-        echo '<div class="alert alert-' . $type . '" role="status"' . $dismiss . '><div>'
+        /*
+         * data-flash marks it as a passing message rather than part of the
+         * page, so the script can lift it into a toast and take the banner
+         * out of the flow. An alert that belongs to the page carries no such
+         * attribute and is left alone. Without scripting this renders exactly
+         * as it always did.
+         */
+        echo '<div class="alert alert-' . $type . '" role="status" data-flash="' . $type . '"' . $dismiss . '><div>'
             . e((string) $flash['message']) . '</div></div>';
     }
 }

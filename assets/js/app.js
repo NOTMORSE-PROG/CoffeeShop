@@ -53,20 +53,72 @@
     return region;
   }
 
-  function toast(message, variant) {
+  function toast(message, variant, life) {
     var el = document.createElement('div');
     el.className = 'toast' + (variant ? ' toast-' + variant : '');
     el.textContent = message;
 
     toastRegion().appendChild(el);
 
-    window.setTimeout(function () {
+    // Clicking it takes it away, for anyone who would rather not wait.
+    el.addEventListener('click', function () { dismiss(); });
+
+    var gone = false;
+
+    function dismiss() {
+      if (gone) return;
+      gone = true;
       el.style.opacity = '0';
       window.setTimeout(function () {
         if (el.parentNode) el.parentNode.removeChild(el);
       }, 220);
-    }, 3200);
+    }
+
+    window.setTimeout(dismiss, life || 3200);
   }
+
+  /* --- Flash messages become toasts -------------------------------------------
+     A flash used to render as a full-width bar above the content, so every
+     save pushed the whole page down and the list jumped under the pointer.
+     The toast region is fixed to the corner, so nothing moves.
+
+     Only elements the server marked as a flash are moved. An alert that is
+     part of the page stays where it is. With no scripting the bar renders as
+     before, which is why the server still sends it.                         */
+
+  (function flashesToToasts() {
+    var flashes = document.querySelectorAll('[data-flash]');
+    if (!flashes.length) return;
+
+    Array.prototype.forEach.call(flashes, function (el) {
+      var kind = el.getAttribute('data-flash');
+      var text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+
+      if (text === '') return;
+
+      // Only success and error have a colour of their own; anything else
+      // takes the neutral toast.
+      var variant = kind === 'success' ? 'success'
+        : (kind === 'error' || kind === 'danger') ? 'error'
+        : '';
+
+      // Something that went wrong is worth reading twice, so it is given
+      // longer than a confirmation that something worked.
+      toast(text, variant, variant === 'error' ? 7000 : 3200);
+
+      // Out of the flow entirely, rather than hidden, so it cannot leave a
+      // gap where the bar used to be.
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
+
+    // The container the customer site wraps each flash in is left behind
+    // empty, and an empty container still has its own margins.
+    Array.prototype.forEach.call(document.querySelectorAll('main > .container'), function (el) {
+      if (el.children.length === 0 && el.textContent.trim() === '') {
+        el.parentNode.removeChild(el);
+      }
+    });
+  })();
 
   /* --- Confirmation ----------------------------------------------------------
      Any element with data-confirm asks before its action runs. Used on
