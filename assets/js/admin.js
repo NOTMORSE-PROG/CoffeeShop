@@ -430,41 +430,44 @@
     }
 
     /* Show the chosen picture before it is uploaded, so a wrong file is
-       obvious without a round trip to the server. */
-    var input = document.querySelector('[data-picture-input]');
+       obvious without a round trip to the server.
 
-    if (input) {
-      var preview = document.querySelector('[data-picture-preview]');
-      var empty = document.querySelector('[data-picture-empty]');
+       Delegated, and scoped to the form the input is in, because the edit
+       form can arrive after this runs - it is fetched when Edit is clicked -
+       and would otherwise have no preview at all. */
+    document.addEventListener('change', function (event) {
+      var input = event.target.closest('[data-picture-input]');
+      if (!input) return;
 
-      input.addEventListener('change', function () {
-        var file = input.files && input.files[0];
+      var scope = input.closest('form') || document;
+      var preview = scope.querySelector('[data-picture-preview]');
+      var empty = scope.querySelector('[data-picture-empty]');
+      var file = input.files && input.files[0];
 
-        if (!file || !preview) return;
+      if (!file || !preview) return;
 
-        if (!/^image\//.test(file.type)) {
-          if (window.OurCoffee) window.OurCoffee.toast('That file is not a picture.', 'error');
-          input.value = '';
-          return;
-        }
+      if (!/^image\//.test(file.type)) {
+        if (window.OurCoffee) window.OurCoffee.toast('That file is not a picture.', 'error');
+        input.value = '';
+        return;
+      }
 
-        if (file.size > 2 * 1024 * 1024) {
-          if (window.OurCoffee) window.OurCoffee.toast('That picture is over the 2 MB limit.', 'error');
-          input.value = '';
-          return;
-        }
+      if (file.size > 2 * 1024 * 1024) {
+        if (window.OurCoffee) window.OurCoffee.toast('That picture is over the 2 MB limit.', 'error');
+        input.value = '';
+        return;
+      }
 
-        var reader = new FileReader();
+      var reader = new FileReader();
 
-        reader.onload = function (event) {
-          preview.src = event.target.result;
-          preview.removeAttribute('hidden');
-          if (empty) empty.setAttribute('hidden', '');
-        };
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        preview.removeAttribute('hidden');
+        if (empty) empty.setAttribute('hidden', '');
+      };
 
-        reader.readAsDataURL(file);
-      });
-    }
+      reader.readAsDataURL(file);
+    });
   })();
 
   /* --- Customisation: switch group without reloading -------------------------
@@ -935,111 +938,164 @@
   })();
 
   /* --- Editing happens in a dialog --------------------------------------------
-     Clicking Edit on a row used to reload the page and expand a fold in a
-     different card, so the form appeared somewhere unrelated to the row that
-     was clicked.
+     Clicking Edit used to reload the page: the server rendered the form into
+     a fold somewhere else on the page, and the script lifted it out of there.
+     So the page flashed, and on Customisation it jumped down to the form's
+     anchor on the way.
 
-     The server still renders the form in that fold, which is what keeps this
-     working with scripting off. Here the rendered form is MOVED into a dialog
-     rather than rebuilt: moving a node carries its listeners with it, so the
-     picture preview and everything else keep working untouched.             */
+     The link is intercepted instead, the page fetched in the background and
+     only the form taken out of it. Nothing navigates and nothing scrolls, so
+     the list, its filters and the scroll position are untouched behind the
+     dialog and still there when it closes.
 
-  (function editInDialog() {
-    var fold = document.querySelector('[data-edit-modal]');
-    if (!fold) return;
+     Two ways in, one dialog:
+       - a click on an Edit link, which fetches
+       - a page that was loaded on an edit address anyway, with no scripting
+         or by following the link straight, where the form is already rendered
+         and is moved in rather than fetched
 
-    var form = fold.querySelector('form');
-    if (!form || !window.HTMLDialogElement) return;
+     Every fall-back here is the plain navigation that used to happen, so a
+     failed fetch or a page in an unexpected shape still gets you to the form. */
 
-    var dialog = document.createElement('dialog');
-    dialog.className = 'modal modal-wide';
+  (function editing() {
+    var dialog = null;
+    var card = null;
+    var titleEl = null;
+    var scroll = null;
+    var returnTo = null;
 
-    var card = document.createElement('div');
-    card.className = 'modal-card';
+    function build() {
+      dialog = document.createElement('dialog');
+      dialog.className = 'modal modal-wide';
 
-    var title = document.createElement('h2');
-    title.className = 'modal-title';
-    title.textContent = fold.getAttribute('data-edit-modal');
+      card = document.createElement('div');
+      card.className = 'modal-card';
 
-    var scroll = document.createElement('div');
-    scroll.className = 'modal-scroll';
+      titleEl = document.createElement('h2');
+      titleEl.className = 'modal-title';
 
-    // Outside the form, so it cannot be mistaken for a submit button. It is
-    // the same leave-without-saving as Cancel at the bottom, within reach when
-    // the form is long enough to have scrolled past it.
-    var close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'modal-close';
-    close.setAttribute('aria-label', 'Close without saving');
-    close.textContent = '\u00d7';
-    close.addEventListener('click', function () { dialog.close(); });
+      scroll = document.createElement('div');
+      scroll.className = 'modal-scroll';
 
-    card.appendChild(close);
-    card.appendChild(title);
-    card.appendChild(scroll);
-    dialog.appendChild(card);
-    document.body.appendChild(dialog);
+      var close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'modal-close';
+      close.setAttribute('aria-label', 'Close without saving');
+      close.textContent = '\u00d7';
+      close.addEventListener('click', function () { dialog.close(); });
 
-    // The move. Everything bound to the form comes with it.
-    scroll.appendChild(form);
+      card.appendChild(close);
+      card.appendChild(titleEl);
+      card.appendChild(scroll);
+      dialog.appendChild(card);
+      document.body.appendChild(dialog);
 
-    // The fold is empty now, and leaving it open would show an empty panel
-    // behind the dialog.
-    fold.open = false;
+      dialog.addEventListener('click', function (event) {
+        if (event.target === dialog) dialog.close();
+      });
 
-    /*
-     * Leaving goes back to the list rather than only hiding the dialog. The
-     * address still says edit_product=N, so without this a reload would bring
-     * the form straight back and Esc would look like it had done nothing.
-     *
-     * The Cancel button inside the form is a link to that same list URL, so it
-     * navigates on its own and this never has to run for it.
-     */
-    var leaving = false;
-    var backTo = form.querySelector('[data-fold-cancel]');
-    var listUrl = backTo ? backTo.getAttribute('href') : window.location.pathname;
+      dialog.addEventListener('close', function () {
+        scroll.innerHTML = '';
 
-    dialog.addEventListener('click', function (event) {
-      if (event.target === dialog) dialog.close();
-    });
-
-    dialog.addEventListener('close', function () {
-      if (leaving) return;
-      leaving = true;
-      window.location.href = listUrl;
-    });
-
-    // A submit leaves the page by itself; do not race it with the close
-    // handler's navigation.
-    form.addEventListener('submit', function () { leaving = true; });
-
-    /*
-     * The fragment is for the no-script case, where it jumps to the form in
-     * the page. Here the form is in the dialog, so all the fragment still does
-     * is make the browser reset focus once the page finishes loading. Taking
-     * it off the address is more reliable than trying to focus after it.
-     */
-    if (window.history && history.replaceState && /#(product|category)-form$/.test(window.location.hash ? '#' + window.location.hash.slice(1) : '')) {
-      history.replaceState(null, '', window.location.pathname + window.location.search);
+        // Only when the address itself is an edit address, which is the
+        // loaded-straight-into-an-edit case. A fetched one never changed it.
+        if (returnTo) {
+          var url = returnTo;
+          returnTo = null;
+          window.location.href = url;
+        }
+      });
     }
 
-    dialog.showModal();
+    function open(form, title) {
+      if (!dialog) build();
 
-    var first = form.querySelector('input:not([type="hidden"]):not([readonly]), select, textarea');
+      titleEl.textContent = title || 'Edit';
+      scroll.innerHTML = '';
+      scroll.appendChild(form);
 
-    if (first) {
-      var land = function () { if (document.activeElement !== first) first.focus(); };
+      dialog.showModal();
 
-      land();
+      var first = form.querySelector('input:not([type="hidden"]):not([readonly]), select, textarea');
+      if (first) {
+        window.requestAnimationFrame(function () { first.focus(); });
+      }
+    }
 
-      // replaceState does not cancel work the browser already has queued, so
-      // confirm it once loading is done.
-      if (document.readyState === 'complete') {
-        window.requestAnimationFrame(land);
-      } else {
-        window.addEventListener('load', function () { window.requestAnimationFrame(land); });
+    /* --- Opened by clicking Edit -------------------------------------------- */
+
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest('[data-edit-dialog]');
+      if (!link) return;
+
+      // Leave the browser's own shortcuts alone: a middle click or a modifier
+      // means they want it in a tab, not in a dialog.
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (!window.HTMLDialogElement || !window.fetch) return;
+
+      event.preventDefault();
+
+      var from = link.getAttribute('data-edit-from');
+      var title = link.getAttribute('data-edit-dialog');
+      var href = link.href;
+
+      link.classList.add('is-busy');
+
+      fetch(href, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+        .then(function (response) {
+          if (!response.ok) throw new Error('bad response');
+          return response.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var holder = doc.querySelector(from);
+          var form = holder && holder.querySelector('form');
+
+          if (!form) {
+            window.location.href = href;
+            return;
+          }
+
+          open(document.importNode(form, true), title);
+        })
+        .catch(function () {
+          window.location.href = href;
+        })
+        .then(function () {
+          link.classList.remove('is-busy');
+        });
+    });
+
+    /* --- Already on an edit address ----------------------------------------- */
+
+    var fold = document.querySelector('[data-edit-modal]');
+
+    if (fold && window.HTMLDialogElement) {
+      var rendered = fold.querySelector('form');
+
+      if (rendered) {
+        var cancel = rendered.querySelector('[data-fold-cancel]');
+
+        // Closing has to clear the edit out of the address here, or a reload
+        // would bring the form straight back.
+        returnTo = cancel ? cancel.getAttribute('href') : window.location.pathname;
+
+        rendered.addEventListener('submit', function () { returnTo = null; });
+
+        /*
+         * The fragment is for the no-script case, where it jumps to the form
+         * in the page. With the form in a dialog all it still does is make
+         * the browser reset focus once the page has finished loading.
+         */
+        if (window.history && history.replaceState && window.location.hash) {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+
+        fold.open = false;
+        open(rendered, fold.getAttribute('data-edit-modal'));
       }
     }
   })();
+
 
 })();

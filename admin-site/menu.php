@@ -468,7 +468,7 @@ if ($stateFilter === 'on') {
 $productWhere = $conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions);
 
 // --- Pagination -------------------------------------------------------------
-const PER_PAGE = 20;
+const PER_PAGE = 10;
 
 $totalProducts = (int) db_value(
     'SELECT COUNT(*) FROM products p JOIN categories c ON c.id = p.category_id' . $productWhere,
@@ -613,7 +613,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
 
               <span class="cat-actions">
                 <a class="btn btn-sm btn-ghost"
-                   href="<?= e($editUrl('edit_category', (int) $category['id'])) ?>#category-form">Edit</a>
+                   href="<?= e($editUrl('edit_category', (int) $category['id'])) ?>#category-form"
+                   data-edit-dialog="Edit category" data-edit-from="#category-form">Edit</a>
 
                 <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
                   <?= csrf_field() ?>
@@ -919,7 +920,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           </thead>
           <tbody>
             <?php foreach ($products as $product): ?>
-              <tr>
+              <?php /* Marked here rather than read off the badge, so the row can be dimmed. */ ?>
+              <tr<?= (int) $product['is_available'] === 1 ? '' : ' class="is-hidden"' ?>>
                 <td class="tick-col">
                   <input type="checkbox" name="product_ids[]" value="<?= (int) $product['id'] ?>"
                          data-batch-item form="batch-delete-form"
@@ -954,7 +956,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                 </td>
                 <td class="right nowrap">
                   <a class="btn btn-sm btn-ghost"
-                     href="<?= e($editUrl('edit_product', (int) $product['id'])) ?>#product-form">Edit</a>
+                     href="<?= e($editUrl('edit_product', (int) $product['id'])) ?>#product-form"
+                     data-edit-dialog="Edit menu item" data-edit-from="#product-form">Edit</a>
 
                   <form method="post" action="<?= e(admin_url('menu.php')) ?>" class="inline-form" data-no-guard>
                     <?= csrf_field() ?>
