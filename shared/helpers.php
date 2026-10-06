@@ -158,6 +158,15 @@ function normalize_ph_mobile(string $raw): ?string
         return plausible_ph_subscriber(substr($digits, 2)) ? $digits : null;
     }
 
+    /*
+     * 63 followed by the whole 09XXXXXXXXX - thirteen digits. It is what you
+     * get by putting +63 in front of a number already written the local way,
+     * which people do often enough that refusing it is just rude.
+     */
+    if (str_starts_with($digits, '630') && strlen($digits) === 13) {
+        return plausible_ph_subscriber(substr($digits, 3)) ? '63' . substr($digits, 3) : null;
+    }
+
     if (str_starts_with($digits, '9') && strlen($digits) === 10) {
         return plausible_ph_subscriber($digits) ? '63' . $digits : null;
     }

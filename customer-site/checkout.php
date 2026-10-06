@@ -163,7 +163,7 @@ customer_head('Checkout', 'Confirm your details and place your order.');
               <div class="field">
                 <label class="label" for="name">Name <span class="req">*</span></label>
                 <input class="input" id="name" name="name" type="text" required
-                       autocomplete="name" maxlength="120"
+                       autocomplete="off" maxlength="120"
                        value="<?= e($form['name']) ?>"
                        <?= isset($errors['name']) ? 'aria-invalid="true" aria-describedby="name-error"' : '' ?>>
                 <?php if (isset($errors['name'])): ?>
@@ -179,7 +179,7 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                 <div class="phone-field">
                   <span class="phone-prefix" aria-hidden="true">+63</span>
                   <input class="input" id="phone" name="phone" type="tel" required
-                         autocomplete="tel" inputmode="numeric"
+                         autocomplete="off" inputmode="numeric"
                          maxlength="10" minlength="10" pattern="9[0-9]{9}"
                          placeholder="9171234567"
                          title="Ten digits beginning with 9, as in 9171234567"
@@ -235,7 +235,7 @@ customer_head('Checkout', 'Confirm your details and place your order.');
               <div class="field">
                 <label class="label" for="delivery_address">Delivery address <span class="req">*</span></label>
                 <textarea class="textarea" id="delivery_address" name="delivery_address"
-                          maxlength="255" autocomplete="street-address"
+                          maxlength="255" autocomplete="off"
                           placeholder="House or unit number, street, barangay"
                           <?= isset($errors['delivery_address']) ? 'aria-invalid="true"' : '' ?>><?= e($form['delivery_address']) ?></textarea>
                 <?php if (isset($errors['delivery_address'])): ?>
@@ -246,7 +246,7 @@ customer_head('Checkout', 'Confirm your details and place your order.');
               <div class="field">
                 <label class="label" for="delivery_city">City <span class="req">*</span></label>
                 <input class="input" id="delivery_city" name="delivery_city" type="text"
-                       maxlength="80" autocomplete="address-level2"
+                       maxlength="80" autocomplete="off"
                        value="<?= e($form['delivery_city']) ?>"
                        <?= isset($errors['delivery_city']) ? 'aria-invalid="true"' : '' ?>>
                 <?php if (isset($errors['delivery_city'])): ?>

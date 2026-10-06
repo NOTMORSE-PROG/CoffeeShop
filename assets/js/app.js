@@ -77,6 +77,63 @@
     window.setTimeout(dismiss, life || 3200);
   }
 
+  /* --- The mobile number field ------------------------------------------------
+     The box holds the ten digits after +63, but people paste and type the
+     number every other way: +639171575437, 09171575437, with spaces, with
+     dashes, and +63 in front of a number that already starts with 0.
+
+     Rather than refuse those and leave someone guessing, each is reduced to
+     the ten digits as it is entered. The server accepts the same spread, so
+     this only saves the round trip.                                         */
+
+  (function phoneField() {
+    function tidy(value) {
+      var digits = String(value).replace(/\D+/g, '');
+
+      // +63 in front, however it was written.
+      if (digits.length > 10 && digits.indexOf('63') === 0) {
+        digits = digits.slice(2);
+      }
+
+      // The local leading zero, including the one left behind by +630...
+      if (digits.length > 10 && digits.indexOf('0') === 0) {
+        digits = digits.slice(1);
+      }
+      if (digits.length === 11 && digits.indexOf('0') === 0) {
+        digits = digits.slice(1);
+      }
+
+      return digits.slice(0, 10);
+    }
+
+    document.addEventListener('input', function (event) {
+      var input = event.target;
+      if (!input.matches || !input.matches('.phone-field input')) return;
+
+      var before = input.value;
+      var after = tidy(before);
+
+      if (after === before) return;
+
+      /*
+       * Where the caret lands matters: rewriting the value sends it to the
+       * end, which is maddening when someone is correcting a digit in the
+       * middle. It only moves when the text before it actually changed.
+       */
+      var caret = input.selectionStart;
+      var removedBefore = before.slice(0, caret).length - tidy(before.slice(0, caret)).length;
+
+      input.value = after;
+
+      try {
+        var at = Math.max(0, caret - removedBefore);
+        input.setSelectionRange(at, at);
+      } catch (e) {
+        /* some browsers refuse this on type="tel"; the value is still right */
+      }
+    });
+  })();
+
   /* --- Flash messages become toasts -------------------------------------------
      A flash used to render as a full-width bar above the content, so every
      save pushed the whole page down and the list jumped under the pointer.
