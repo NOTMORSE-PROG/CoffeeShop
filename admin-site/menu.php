@@ -761,7 +761,6 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
         </form>
       <?php endif; ?>
       </details>
-    </div>
 
       <?php if ($categories !== []): ?>
       <details class="form-fold">

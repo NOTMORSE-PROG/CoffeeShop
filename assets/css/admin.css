@@ -911,10 +911,14 @@
 .tick-col { width: 2.6rem; }
 .tick-col input { accent-color: var(--accent); width: 1rem; height: 1rem; }
 
-.pic-col { width: 3.4rem; }
+/* min-width as well as width: in an auto-layout table a plain width is only a
+   suggestion, and the percentage set on the item column was squeezing this one
+   down to a four pixel sliver with the picture still in it. */
+.pic-col { width: 3.4rem; min-width: 3.4rem; }
 
 .menu-thumb {
   width: 44px;
+  min-width: 44px;
   height: 44px;
   border-radius: var(--radius-sm);
   object-fit: cover;

@@ -188,8 +188,18 @@
   cursor: not-allowed;
 }
 
-.choice-title { font-weight: 600; font-size: var(--text-sm); }
-.choice-note { font-size: var(--text-xs); color: var(--text-secondary); }
+/* Both blocks, so a title and its note stack instead of running together on
+   one line as "Offer delivery Whether customers may choose delivery". Where
+   either is a direct flex child of .choice it is blockified anyway, so this
+   only changes the pairs that sit inside a wrapper. */
+.choice-title { display: block; font-weight: 600; font-size: var(--text-sm); }
+.choice-note {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
 .choice-price { margin-left: auto; font-size: var(--text-sm); font-weight: 600; color: var(--accent); }
 
 /* --- Cards -------------------------------------------------------------------- */
@@ -210,6 +220,11 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  /* A fixed floor so every header is the same height whether or not it
+     carries a count beside the title. Without it a header with a count came
+     out a pixel taller than one without, and two cards side by side had their
+     contents starting on different lines. */
+  min-height: 3.5rem;
 }
 
 .card-header h2,
