@@ -275,7 +275,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         if ((int) db_value('SELECT COUNT(*) FROM categories WHERE id = ?', [$categoryId]) === 0) {
             flash('error', 'Choose a category that exists.');
-            redirect('menu.php#batch-add');
+            redirect('menu.php#product-form');
         }
 
         /*
@@ -352,7 +352,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             flash('error', 'There was nothing to add.');
         }
 
-        redirect('menu.php#batch-add');
+        redirect('menu.php#product-form');
     }
 
     // --- Remove several items at once ----------------------------------------
@@ -517,6 +517,55 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
   <section class="card">
     <div class="card-header"><h2>Categories</h2></div>
 
+    <?php
+    /*
+     * Folded away unless it is being used. The list is what the owner comes
+     * here to read; adding a category is occasional. Open automatically when
+     * editing, so the Edit link still lands on a filled-in form.
+     */
+    ?>
+    <div class="card-body" id="category-form">
+      <details class="form-fold"<?= $editCategory ? ' open' : '' ?>>
+        <summary><?= $editCategory ? 'Edit category' : 'Add a category' ?></summary>
+
+      <form method="post" action="<?= e(admin_url('menu.php')) ?>">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="category_save">
+        <input type="hidden" name="id" value="<?= (int) ($editCategory['id'] ?? 0) ?>">
+
+        <div class="field">
+          <label class="label" for="category_name">Name <span class="req">*</span></label>
+          <input class="input" type="text" id="category_name" name="name" maxlength="80" required
+                 value="<?= e((string) ($editCategory['name'] ?? '')) ?>">
+        </div>
+
+        <div class="field">
+          <label class="label" for="category_description">Description</label>
+          <input class="input" type="text" id="category_description" name="description" maxlength="255"
+                 value="<?= e((string) ($editCategory['description'] ?? '')) ?>">
+        </div>
+
+        <label class="choice mb-4">
+          <input type="checkbox" name="is_active" value="1"
+                 <?= (int) ($editCategory['is_active'] ?? 1) === 1 ? 'checked' : '' ?>>
+          <span>
+            <span class="choice-title">Show this category</span>
+            <span class="choice-note">Unticking hides the whole section from customers.</span>
+          </span>
+        </label>
+
+        <div class="row">
+          <button type="submit" class="btn btn-sm" data-busy-label="Saving">
+            <?= $editCategory ? 'Save changes' : 'Add category' ?>
+          </button>
+          <?php if ($editCategory): ?>
+            <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>">Cancel</a>
+          <?php endif; ?>
+        </div>
+      </form>
+      </details>
+    </div>
+
     <?php if ($categories === []): ?>
       <div class="empty">
         <?= admin_icon('icon-box', 'empty-icon') ?>
@@ -567,54 +616,6 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
       </ul>
     <?php endif; ?>
 
-    <?php
-    /*
-     * Folded away unless it is being used. The list is what the owner comes
-     * here to read; adding a category is occasional. Open automatically when
-     * editing, so the Edit link still lands on a filled-in form.
-     */
-    ?>
-    <div class="card-body" id="category-form">
-      <details class="form-fold"<?= $editCategory ? ' open' : '' ?>>
-        <summary><?= $editCategory ? 'Edit category' : 'Add a category' ?></summary>
-
-      <form method="post" action="<?= e(admin_url('menu.php')) ?>">
-        <?= csrf_field() ?>
-        <input type="hidden" name="action" value="category_save">
-        <input type="hidden" name="id" value="<?= (int) ($editCategory['id'] ?? 0) ?>">
-
-        <div class="field">
-          <label class="label" for="category_name">Name <span class="req">*</span></label>
-          <input class="input" type="text" id="category_name" name="name" maxlength="80" required
-                 value="<?= e((string) ($editCategory['name'] ?? '')) ?>">
-        </div>
-
-        <div class="field">
-          <label class="label" for="category_description">Description</label>
-          <input class="input" type="text" id="category_description" name="description" maxlength="255"
-                 value="<?= e((string) ($editCategory['description'] ?? '')) ?>">
-        </div>
-
-        <label class="choice mb-4">
-          <input type="checkbox" name="is_active" value="1"
-                 <?= (int) ($editCategory['is_active'] ?? 1) === 1 ? 'checked' : '' ?>>
-          <span>
-            <span class="choice-title">Show this category</span>
-            <span class="choice-note">Unticking hides the whole section from customers.</span>
-          </span>
-        </label>
-
-        <div class="row">
-          <button type="submit" class="btn btn-sm" data-busy-label="Saving">
-            <?= $editCategory ? 'Save changes' : 'Add category' ?>
-          </button>
-          <?php if ($editCategory): ?>
-            <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>">Cancel</a>
-          <?php endif; ?>
-        </div>
-      </form>
-      </details>
-    </div>
   </section>
 
   <!-- ------------------------------------------------------------- products -->
@@ -628,6 +629,204 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           <?= $offset + 1 ?>&ndash;<?= min($offset + PER_PAGE, $totalProducts) ?> of <?= $totalProducts ?>
         <?php endif; ?>
       </span>
+    </div>
+
+    <div class="card-body menu-actions" id="product-form">
+      <details class="form-fold"<?= $editProduct ? ' open' : '' ?>>
+        <summary><?= $editProduct ? 'Edit menu item' : 'Add a menu item' ?></summary>
+
+      <?php if ($categories === []): ?>
+        <p class="small subtle mb-0">Add a category first.</p>
+      <?php else: ?>
+        <form method="post" action="<?= e(admin_url('menu.php')) ?>" enctype="multipart/form-data">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="product_save">
+          <input type="hidden" name="id" value="<?= (int) ($editProduct['id'] ?? 0) ?>">
+
+          <div class="field">
+            <label class="label" for="product_name">Name <span class="req">*</span></label>
+            <input class="input" type="text" id="product_name" name="name" maxlength="120" required
+                   value="<?= e((string) ($editProduct['name'] ?? '')) ?>">
+          </div>
+
+          <div class="field">
+            <label class="label" for="product_category">Category <span class="req">*</span></label>
+            <select class="select" id="product_category" name="category_id" required>
+              <?php foreach ($categories as $category): ?>
+                <option value="<?= (int) $category['id'] ?>"
+                  <?= (int) ($editProduct['category_id'] ?? $categoryFilter) === (int) $category['id'] ? 'selected' : '' ?>>
+                  <?= e((string) $category['name']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="label" for="product_description">Description</label>
+            <textarea class="textarea" id="product_description" name="description" maxlength="400"
+                      rows="2"><?= e((string) ($editProduct['description'] ?? '')) ?></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label class="label" for="product_price">Price <span class="req">*</span></label>
+              <input class="input tabular" type="number" id="product_price" name="price"
+                     step="0.01" min="0" max="99999999" required
+                     value="<?= e(number_format((float) ($editProduct['price'] ?? 0), 2, '.', '')) ?>">
+            </div>
+
+          </div>
+
+          <?php $currentImage = (string) ($editProduct['image_path'] ?? ''); ?>
+
+          <div class="field">
+            <span class="label">Picture</span>
+
+            <div class="picture-field">
+              <div class="picture-preview">
+                <?php if ($currentImage !== ''): ?>
+                  <img data-picture-preview
+                       src="<?= e(admin_picture($currentImage)) ?>"
+                       alt="Current picture for this item" width="96" height="96">
+                <?php else: ?>
+                  <img data-picture-preview hidden src="" alt="" width="96" height="96">
+                  <span class="picture-empty" data-picture-empty>
+                    <?= admin_icon('icon-cup', 'icon') ?>
+                    <span class="tiny">No picture</span>
+                  </span>
+                <?php endif; ?>
+              </div>
+
+              <div class="grow">
+                <input class="input" type="file" id="product_image_file" name="image_file"
+                       accept="image/jpeg,image/png,image/gif,image/webp"
+                       data-picture-input>
+                <p class="hint">
+                  JPG, PNG, GIF or WebP, up to 2 MB. Square pictures look best.
+                  SVG is not accepted for uploads.
+                </p>
+
+                <?php if ($currentImage !== ''): ?>
+                  <label class="choice mt-2">
+                    <input type="checkbox" name="clear_image" value="1">
+                    <span>
+                      <span class="choice-title">Remove the current picture</span>
+                      <span class="choice-note">The item falls back to a plain placeholder.</span>
+                    </span>
+                  </label>
+                <?php endif; ?>
+              </div>
+            </div>
+
+            <details class="picture-advanced">
+              <summary>Or point at a file already in the project</summary>
+              <input class="input mt-2" type="text" id="product_image" name="image_path" maxlength="255"
+                     placeholder="assets/img/products/mocha.svg"
+                     value="<?= e($currentImage) ?>">
+              <p class="hint">
+                A relative path inside the project. This is how the drink art that ships with
+                the system is referenced. Uploading a picture above replaces whatever is here.
+              </p>
+            </details>
+          </div>
+
+          <div class="choice-group choice-group-2 mb-4">
+            <label class="choice">
+              <input type="checkbox" name="is_available" value="1"
+                     <?= (int) ($editProduct['is_available'] ?? 1) === 1 ? 'checked' : '' ?>>
+              <span>
+                <span class="choice-title">Available</span>
+                <span class="choice-note">Customers can order it.</span>
+              </span>
+            </label>
+
+            <label class="choice">
+              <input type="checkbox" name="is_featured" value="1"
+                     <?= (int) ($editProduct['is_featured'] ?? 0) === 1 ? 'checked' : '' ?>>
+              <span>
+                <span class="choice-title">Featured</span>
+                <span class="choice-note">Highlighted on the home page.</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="row">
+            <button type="submit" class="btn btn-sm" data-busy-label="Saving">
+              <?= $editProduct ? 'Save changes' : 'Add item' ?>
+            </button>
+            <?php if ($editProduct): ?>
+              <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>">Cancel</a>
+            <?php endif; ?>
+          </div>
+        </form>
+      <?php endif; ?>
+      </details>
+    </div>
+
+      <?php if ($categories !== []): ?>
+      <details class="form-fold">
+        <summary>Add several items at once</summary>
+
+      <form method="post" action="<?= e(admin_url('menu.php')) ?>">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="product_batch_add">
+
+        <div class="field">
+          <label class="label" for="batch_category">Put them all in <span class="req">*</span></label>
+          <select class="select" id="batch_category" name="category_id" required>
+            <?php foreach ($categories as $category): ?>
+              <option value="<?= (int) $category['id'] ?>"><?= e((string) $category['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table batch-add-table" data-batch-rows>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col" class="nowrap">Price</th>
+                <th scope="col">Description <span class="subtle">(optional)</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php for ($i = 0; $i < 5; $i++): ?>
+                <tr>
+                  <td><input class="input" type="text" name="item_name[]" maxlength="120"
+                             <?= $i === 0 ? 'aria-label="Name of the first item"' : 'aria-label="Name"' ?>></td>
+                  <td><input class="input tabular" type="number" name="item_price[]"
+                             step="0.01" min="0" max="99999999" aria-label="Price"></td>
+                  <td><input class="input" type="text" name="item_description[]" maxlength="400"
+                             aria-label="Description"></td>
+                </tr>
+              <?php endfor; ?>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint">
+          Fill in as many rows as you need and leave the rest blank. Prices are in pesos. A row
+          with no price, or a name already in that category, is skipped and reported back rather
+          than guessed at.
+        </p>
+
+        <div class="row row-wrap mt-3">
+          <button type="button" class="btn btn-sm btn-secondary" data-batch-add-row>
+            <?= admin_icon('icon-plus', 'icon-sm') ?> Add another row
+          </button>
+
+          <button type="submit" class="btn" data-busy-label="Adding">
+            <?= admin_icon('icon-plus', 'icon-sm') ?> Add these items
+          </button>
+        </div>
+
+        <p class="tiny subtle mt-3 mb-0">
+          They arrive on sale, unfeatured, with no picture. Add pictures afterwards by editing
+          each one, or leave them with the plain placeholder.
+        </p>
+      </form>
+      </details>
+      <?php endif; ?>
     </div>
 
     <!-- Filters. A GET form, so a filtered view is a link you can keep. -->
@@ -783,211 +982,9 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
       <?php endif; ?>
     <?php endif; ?>
 
-    <div class="card-body" id="product-form">
-      <details class="form-fold"<?= $editProduct ? ' open' : '' ?>>
-        <summary><?= $editProduct ? 'Edit menu item' : 'Add a menu item' ?></summary>
-
-      <?php if ($categories === []): ?>
-        <p class="small subtle mb-0">Add a category first.</p>
-      <?php else: ?>
-        <form method="post" action="<?= e(admin_url('menu.php')) ?>" enctype="multipart/form-data">
-          <?= csrf_field() ?>
-          <input type="hidden" name="action" value="product_save">
-          <input type="hidden" name="id" value="<?= (int) ($editProduct['id'] ?? 0) ?>">
-
-          <div class="field">
-            <label class="label" for="product_name">Name <span class="req">*</span></label>
-            <input class="input" type="text" id="product_name" name="name" maxlength="120" required
-                   value="<?= e((string) ($editProduct['name'] ?? '')) ?>">
-          </div>
-
-          <div class="field">
-            <label class="label" for="product_category">Category <span class="req">*</span></label>
-            <select class="select" id="product_category" name="category_id" required>
-              <?php foreach ($categories as $category): ?>
-                <option value="<?= (int) $category['id'] ?>"
-                  <?= (int) ($editProduct['category_id'] ?? $categoryFilter) === (int) $category['id'] ? 'selected' : '' ?>>
-                  <?= e((string) $category['name']) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-
-          <div class="field">
-            <label class="label" for="product_description">Description</label>
-            <textarea class="textarea" id="product_description" name="description" maxlength="400"
-                      rows="2"><?= e((string) ($editProduct['description'] ?? '')) ?></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="field">
-              <label class="label" for="product_price">Price <span class="req">*</span></label>
-              <input class="input tabular" type="number" id="product_price" name="price"
-                     step="0.01" min="0" max="99999999" required
-                     value="<?= e(number_format((float) ($editProduct['price'] ?? 0), 2, '.', '')) ?>">
-            </div>
-
-          </div>
-
-          <?php $currentImage = (string) ($editProduct['image_path'] ?? ''); ?>
-
-          <div class="field">
-            <span class="label">Picture</span>
-
-            <div class="picture-field">
-              <div class="picture-preview">
-                <?php if ($currentImage !== ''): ?>
-                  <img data-picture-preview
-                       src="<?= e(admin_picture($currentImage)) ?>"
-                       alt="Current picture for this item" width="96" height="96">
-                <?php else: ?>
-                  <img data-picture-preview hidden src="" alt="" width="96" height="96">
-                  <span class="picture-empty" data-picture-empty>
-                    <?= admin_icon('icon-cup', 'icon') ?>
-                    <span class="tiny">No picture</span>
-                  </span>
-                <?php endif; ?>
-              </div>
-
-              <div class="grow">
-                <input class="input" type="file" id="product_image_file" name="image_file"
-                       accept="image/jpeg,image/png,image/gif,image/webp"
-                       data-picture-input>
-                <p class="hint">
-                  JPG, PNG, GIF or WebP, up to 2 MB. Square pictures look best.
-                  SVG is not accepted for uploads.
-                </p>
-
-                <?php if ($currentImage !== ''): ?>
-                  <label class="choice mt-2">
-                    <input type="checkbox" name="clear_image" value="1">
-                    <span>
-                      <span class="choice-title">Remove the current picture</span>
-                      <span class="choice-note">The item falls back to a plain placeholder.</span>
-                    </span>
-                  </label>
-                <?php endif; ?>
-              </div>
-            </div>
-
-            <details class="picture-advanced">
-              <summary>Or point at a file already in the project</summary>
-              <input class="input mt-2" type="text" id="product_image" name="image_path" maxlength="255"
-                     placeholder="assets/img/products/mocha.svg"
-                     value="<?= e($currentImage) ?>">
-              <p class="hint">
-                A relative path inside the project. This is how the drink art that ships with
-                the system is referenced. Uploading a picture above replaces whatever is here.
-              </p>
-            </details>
-          </div>
-
-          <div class="choice-group choice-group-2 mb-4">
-            <label class="choice">
-              <input type="checkbox" name="is_available" value="1"
-                     <?= (int) ($editProduct['is_available'] ?? 1) === 1 ? 'checked' : '' ?>>
-              <span>
-                <span class="choice-title">Available</span>
-                <span class="choice-note">Customers can order it.</span>
-              </span>
-            </label>
-
-            <label class="choice">
-              <input type="checkbox" name="is_featured" value="1"
-                     <?= (int) ($editProduct['is_featured'] ?? 0) === 1 ? 'checked' : '' ?>>
-              <span>
-                <span class="choice-title">Featured</span>
-                <span class="choice-note">Highlighted on the home page.</span>
-              </span>
-            </label>
-          </div>
-
-          <div class="row">
-            <button type="submit" class="btn btn-sm" data-busy-label="Saving">
-              <?= $editProduct ? 'Save changes' : 'Add item' ?>
-            </button>
-            <?php if ($editProduct): ?>
-              <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>">Cancel</a>
-            <?php endif; ?>
-          </div>
-        </form>
-      <?php endif; ?>
-      </details>
-    </div>
   </section>
 
 </div>
 
 <!-- Paste a whole category in one go, for setting the menu up the first time. -->
-<section class="card" id="batch-add">
-  <div class="card-body">
-    <?php if ($categories === []): ?>
-      <p class="small subtle mb-0">Add a category first.</p>
-    <?php else: ?>
-      <details class="form-fold">
-        <summary>Add several items at once</summary>
-
-      <form method="post" action="<?= e(admin_url('menu.php')) ?>">
-        <?= csrf_field() ?>
-        <input type="hidden" name="action" value="product_batch_add">
-
-        <div class="field">
-          <label class="label" for="batch_category">Put them all in <span class="req">*</span></label>
-          <select class="select" id="batch_category" name="category_id" required>
-            <?php foreach ($categories as $category): ?>
-              <option value="<?= (int) $category['id'] ?>"><?= e((string) $category['name']) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-
-        <div class="table-wrap">
-          <table class="table batch-add-table" data-batch-rows>
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col" class="nowrap">Price</th>
-                <th scope="col">Description <span class="subtle">(optional)</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php for ($i = 0; $i < 5; $i++): ?>
-                <tr>
-                  <td><input class="input" type="text" name="item_name[]" maxlength="120"
-                             <?= $i === 0 ? 'aria-label="Name of the first item"' : 'aria-label="Name"' ?>></td>
-                  <td><input class="input tabular" type="number" name="item_price[]"
-                             step="0.01" min="0" max="99999999" aria-label="Price"></td>
-                  <td><input class="input" type="text" name="item_description[]" maxlength="400"
-                             aria-label="Description"></td>
-                </tr>
-              <?php endfor; ?>
-            </tbody>
-          </table>
-        </div>
-
-        <p class="hint">
-          Fill in as many rows as you need and leave the rest blank. Prices are in pesos. A row
-          with no price, or a name already in that category, is skipped and reported back rather
-          than guessed at.
-        </p>
-
-        <div class="row row-wrap mt-3">
-          <button type="button" class="btn btn-sm btn-secondary" data-batch-add-row>
-            <?= admin_icon('icon-plus', 'icon-sm') ?> Add another row
-          </button>
-
-          <button type="submit" class="btn" data-busy-label="Adding">
-            <?= admin_icon('icon-plus', 'icon-sm') ?> Add these items
-          </button>
-        </div>
-
-        <p class="tiny subtle mt-3 mb-0">
-          They arrive on sale, unfeatured, with no picture. Add pictures afterwards by editing
-          each one, or leave them with the plain placeholder.
-        </p>
-      </form>
-      </details>
-    <?php endif; ?>
-  </div>
-</section>
-
 <?php admin_footer(); ?>

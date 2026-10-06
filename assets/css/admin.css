@@ -492,7 +492,23 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   gap: var(--space-5);
-  align-items: start;
+  /* Stretch rather than start: a card holding an empty-state sentence used to
+     finish level with the sentence while the chart beside it ran on for
+     another two hundred pixels, which read as a broken layout rather than as
+     an empty report. */
+  align-items: stretch;
+}
+
+.chart-grid > .card { display: flex; flex-direction: column; }
+.chart-grid > .card > .card-body { flex: 1 1 auto; display: flex; flex-direction: column; }
+
+/* An empty chart takes the room the chart would have taken, so the row keeps
+   its shape whether there is data or not. */
+.chart-grid .empty {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  min-height: 15rem;
 }
 
 .chart-wide { grid-column: 1 / -1; }
@@ -1020,6 +1036,21 @@
 .form-fold[open] > summary::before { content: "2"; }
 .form-fold > summary:hover { border-color: var(--accent); color: var(--accent); }
 .form-fold[open] > summary { margin-bottom: var(--space-4); }
+
+/* The two ways of adding an item, side by side directly under the heading.
+   They used to sit at the foot of the page, below twenty rows of table, which
+   is not where anybody looks for the main action on the page. */
+.menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Once either one is open it takes the row to itself, so the form is not
+   squeezed into half the width beside a button. */
+.menu-actions .form-fold[open] { flex: 1 1 100%; }
 
 /* The batch-add rows. Narrow price column, roomy name and description, and
    inputs that sit flush in the cell rather than looking like a form bolted

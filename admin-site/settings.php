@@ -24,17 +24,16 @@ const SETTING_GROUPS = [
                     'shop_open_time', 'shop_close_time', 'accepting_orders', 'low_stock_alert'],
     ],
     'Ordering & Delivery' => [
-        'blurb' => 'Delivery is a simplified option: the shop arranges it, and the fee is a flat amount you set.',
+        'blurb' => 'You arrange the delivery yourself. The fee is a flat amount you set here.',
         'keys'  => ['delivery_enabled', 'delivery_fee', 'free_delivery_city', 'delivery_note'],
     ],
     'Payment' => [
-        'blurb' => 'GCash is a static QR code that you confirm by hand. There is no payment processor.',
+        'blurb' => 'Customers scan your GCash QR and you confirm the payment yourself on each order.',
         'keys'  => ['payment_cash_enabled', 'payment_gcash_enabled', 'gcash_name', 'gcash_number', 'gcash_qr_path'],
     ],
     'SMS delivery' => [
-        'blurb' => 'How texts leave the system. Sending through the shop handset uses your own '
-                 . 'call and text plan, so it costs nothing per message. Semaphore is the paid '
-                 . 'alternative and is billed per credit.',
+        'blurb' => 'Texts can go out from the shop phone, which uses your own call and text '
+                 . 'plan and costs nothing per message, or through a paid service.',
         'keys'  => ['sms_enabled', 'sms_provider', 'sms_sender_name'],
     ],
     'SMS timing' => [
@@ -571,12 +570,6 @@ $connected = $seenAgo !== null && $seenAgo < 600;
       </span>
     </summary>
 
-  <p class="panel-help">
-    The phone collects messages from the server and sends them on your own plan, so each text
-    costs nothing. Nothing is pushed to the phone, because a web host cannot reach a handset
-    behind a home router or on mobile data.
-  </p>
-
   <div class="card-body">
     <div class="handset-stats">
       <div>
@@ -674,9 +667,6 @@ $connected = $seenAgo !== null && $seenAgo < 600;
 
     </details>
 
-    <p class="tiny subtle mt-4 mb-0">
-      Setup steps for the phone are in <code>docs/sms-handset-setup.md</code>.
-    </p>
   </div>
 </section>
   </details>

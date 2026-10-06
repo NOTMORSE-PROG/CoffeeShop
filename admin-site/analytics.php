@@ -285,13 +285,19 @@ admin_header(
   <section class="card chart-wide">
     <div class="card-header">
       <h2>Revenue</h2>
-      <span class="small subtle"><?= count($revenueLabels) ?> days</span>
+      <?php if ($orderCount > 0): ?>
+        <span class="small subtle"><?= count($revenueLabels) ?> days</span>
+      <?php endif; ?>
     </div>
     <div class="card-body">
-      <div class="chart-box">
-        <canvas id="chart-revenue" role="img"
-                aria-label="Revenue per day across the selected range"></canvas>
-      </div>
+      <?php if ($orderCount === 0): ?>
+        <div class="empty"><p class="mb-0">No orders in this range.</p></div>
+      <?php else: ?>
+        <div class="chart-box">
+          <canvas id="chart-revenue" role="img"
+                  aria-label="Revenue per day across the selected range"></canvas>
+        </div>
+      <?php endif; ?>
     </div>
   </section>
 
@@ -315,16 +321,22 @@ admin_header(
   <section class="card">
     <div class="card-header"><h2>Orders by hour</h2></div>
     <div class="card-body">
-      <div class="chart-box">
-        <canvas id="chart-hours" role="img" aria-label="Number of orders placed in each hour of the day"></canvas>
-      </div>
+      <?php if ($orderCount === 0): ?>
+        <div class="empty"><p class="mb-0">No orders in this range.</p></div>
+      <?php else: ?>
+        <div class="chart-box">
+          <canvas id="chart-hours" role="img" aria-label="Number of orders placed in each hour of the day"></canvas>
+        </div>
+      <?php endif; ?>
     </div>
   </section>
 
   <section class="card chart-wide">
     <div class="card-header">
       <h2>Best sellers</h2>
-      <span class="small subtle">Top <?= count($topLabels) ?> by cups sold</span>
+      <?php if ($topValues !== []): ?>
+        <span class="small subtle">Top <?= count($topLabels) ?> by cups sold</span>
+      <?php endif; ?>
     </div>
     <div class="card-body">
       <?php if ($topValues === []): ?>
