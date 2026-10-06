@@ -689,7 +689,10 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                        src="<?= e(admin_picture($currentImage)) ?>"
                        alt="Current picture for this item" width="96" height="96">
                 <?php else: ?>
-                  <img data-picture-preview hidden src="" alt="" width="96" height="96">
+                  <!-- No src until a file is picked: src="" is resolved against the page
+                       URL, so the browser fetches the page again and treats the result as a
+                       broken image. The change handler sets it and unhides it. -->
+                  <img data-picture-preview hidden alt="" width="96" height="96">
                   <span class="picture-empty" data-picture-empty>
                     <?= admin_icon('icon-cup', 'icon') ?>
                     <span class="tiny">No picture</span>
