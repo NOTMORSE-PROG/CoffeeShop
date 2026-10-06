@@ -109,7 +109,8 @@ if (!$forced) {
           <p class="password-rules-title">Your new password needs</p>
           <ul class="password-rules" id="password-rules"
               data-password-rules="new_password"
-              data-password-confirm="confirm_password"></ul>
+              data-password-confirm="confirm_password"
+              data-password-current="current_password"></ul>
         </div>
 
         <button type="submit" class="btn btn-lg btn-block" data-busy-label="Saving">

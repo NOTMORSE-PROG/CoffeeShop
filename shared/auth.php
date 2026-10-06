@@ -328,19 +328,31 @@ function change_password(int $adminId, string $current, string $new, string $con
         return ['ok' => false, 'error' => 'The two new passwords do not match.'];
     }
 
-    $policyError = password_policy_error($new);
-    if ($policyError !== null) {
-        return ['ok' => false, 'error' => $policyError];
-    }
-
     $user = db_one('SELECT id, username, password_hash FROM admin_users WHERE id = ? LIMIT 1', [$adminId]);
 
     if ($user === null || !password_verify($current, $user['password_hash'])) {
         return ['ok' => false, 'error' => 'Your current password is not correct.'];
     }
 
+    /*
+     * Before the policy check, not after. Someone retyping the password they
+     * already have wants to be told that, not told what the policy makes of
+     * it - and a password already in use can well be one the policy would now
+     * refuse, in which case the policy message explains nothing.
+     *
+     * Only the current password is compared, because no history is kept. The
+     * wording says exactly that rather than implying older ones are checked.
+     */
     if (password_verify($new, $user['password_hash'])) {
-        return ['ok' => false, 'error' => 'Please choose a password you have not used here before.'];
+        return [
+            'ok'    => false,
+            'error' => 'That is the password you are already using. Please choose a different one.',
+        ];
+    }
+
+    $policyError = password_policy_error($new);
+    if ($policyError !== null) {
+        return ['ok' => false, 'error' => $policyError];
     }
 
     db_query(

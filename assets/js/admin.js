@@ -277,6 +277,10 @@
       ? document.getElementById(list.getAttribute('data-password-confirm'))
       : null;
 
+    var currentField = list.getAttribute('data-password-current')
+      ? document.getElementById(list.getAttribute('data-password-current'))
+      : null;
+
     if (!target) return;
 
     var checks = [
@@ -307,6 +311,19 @@
         }
       }
     ];
+
+    // Before the match rule, so the list reads in the order someone fills the
+    // form in: what the new password has to be, then that it is not the old
+    // one, then that both boxes agree.
+    if (currentField) {
+      checks.push({
+        key: 'changed',
+        label: 'Different from your current password',
+        // Unticked only once there is something in both boxes to compare, so
+        // an empty form does not accuse anyone of anything.
+        test: function (v) { return v !== '' && v !== currentField.value; }
+      });
+    }
 
     if (confirmField) {
       checks.push({
@@ -345,6 +362,7 @@
 
     target.addEventListener('input', review);
     if (confirmField) confirmField.addEventListener('input', review);
+    if (currentField) currentField.addEventListener('input', review);
     review();
   })();
 
