@@ -84,9 +84,16 @@ to get started. `.env` is never committed.
 | Customer site | <http://localhost/ourcoffee> |
 | Admin site | <http://localhost/ourcoffee-admin> |
 
-Sign in to the admin site with **`owner`** / **`OurCoffee2026!`**, which takes you straight to
-the dashboard. That password is printed here in the README, so change it under
-**Settings → Change password** before the system is deployed anywhere real.
+The database ships with one account, **`owner`**, and no password. Set one before
+you sign in:
+
+```bash
+php database/set-owner-password.php
+```
+
+It asks for the password twice and stores only the hash. No password is written
+in this repository, which is public; the shop owner picks their own and can
+change it afterwards from **Change password** in the admin sidebar.
 
 ---
 

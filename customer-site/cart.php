@@ -71,7 +71,9 @@ customer_head('Your Cart', 'Review your order before checkout.');
               <?= csrf_field() ?>
               <input type="hidden" name="action" value="clear">
               <button class="btn btn-ghost btn-sm" type="submit"
-                      data-confirm="Remove everything from your cart?">Clear cart</button>
+                      data-confirm="Remove everything from your cart?"
+                      data-confirm-title="Clear your cart"
+                      data-confirm-action="Clear cart">Clear cart</button>
             </form>
           </div>
 

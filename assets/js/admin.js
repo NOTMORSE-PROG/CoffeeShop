@@ -887,4 +887,33 @@
     });
   })();
 
+  /* --- Cancelling out of a folded form ----------------------------------------
+     Cancel is a real link to the page, so it works with scripting off: the
+     reload closes the fold because a fold starts shut. With scripting on,
+     reloading would also throw away whatever filter or search the person had
+     set, so close the fold in place instead and leave the page alone.
+
+     A form being edited is a different matter. There the link carries the
+     edit state away with it, so it is left to navigate.                      */
+
+  (function () {
+    document.addEventListener('click', function (event) {
+      var cancel = event.target.closest('[data-fold-cancel]');
+      if (!cancel) return;
+
+      var fold = cancel.closest('details');
+      if (!fold) return;
+
+      // An edit populates the form from the query string; only the server can
+      // clear that, so let the link do its job.
+      if (/[?&]edit_(product|category)=/.test(window.location.search)) return;
+
+      event.preventDefault();
+      fold.open = false;
+
+      var summary = fold.querySelector('summary');
+      if (summary) summary.focus();
+    });
+  })();
+
 })();

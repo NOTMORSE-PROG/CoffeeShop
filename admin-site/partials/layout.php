@@ -341,6 +341,9 @@ function admin_header(string $heading, string $subtitle = ''): void
     <div class="admin-user">
       <p class="admin-user-name"><?= e($name) ?></p>
       <p class="admin-user-role"><?= $role === 'owner' ? 'Owner' : 'Staff' ?></p>
+      <a class="admin-user-link" href="<?= e(admin_url('change-password.php')) ?>">
+        <?= admin_icon('icon-lock', 'icon-sm') ?> Change password
+      </a>
       <form method="post" action="<?= e(admin_url('logout.php')) ?>" data-no-guard>
         <?= csrf_field() ?>
         <button type="submit" class="btn btn-secondary btn-sm btn-block">

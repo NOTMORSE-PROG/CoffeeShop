@@ -680,7 +680,7 @@
   color: var(--accent);
 }
 
-.handset-fold[open] > summary::after { content: "2"; }
+.handset-fold[open] > summary::after { content: "\2212"; }
 .handset-fold[open] > summary { border-bottom: 1px solid var(--border); }
 
 .settings-save { position: sticky; bottom: var(--space-4); box-shadow: var(--shadow-md); }
@@ -1037,7 +1037,7 @@
 
 .form-fold > summary::-webkit-details-marker { display: none; }
 .form-fold > summary::before { content: "+"; font-weight: 700; color: var(--accent); }
-.form-fold[open] > summary::before { content: "2"; }
+.form-fold[open] > summary::before { content: "\2212"; }
 .form-fold > summary:hover { border-color: var(--accent); color: var(--accent); }
 .form-fold[open] > summary { margin-bottom: var(--space-4); }
 
@@ -1277,4 +1277,22 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+/* The one personal action in a sidebar that is otherwise all sections: a quiet
+   link above Sign out, since changing your own password is a rare, deliberate
+   thing rather than somewhere you navigate to. */
+.admin-user-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.admin-user-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
 }

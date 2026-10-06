@@ -46,11 +46,15 @@ INSERT INTO `settings` (`key`, `value`, `description`) VALUES
 -- Default owner account
 --
 -- Username: owner
--- Password: OurCoffee2026!
+-- Password: none. The hash below is deliberately one that no password
+-- produces, so this account cannot be signed into until somebody sets a
+-- password for it:
 --
--- `must_change_password` is 0, so signing in goes straight to the dashboard.
--- This password is printed in the README, so change it from Settings once the
--- system is deployed anywhere real.
+--     php database/set-owner-password.php
+--
+-- This file is public, so it must never carry a working password. It used to,
+-- and the README printed it, which meant anyone who found the repository could
+-- sign in to any copy of this system that had been put online.
 --
 -- The forced-change mechanism itself is still here: an account the owner
 -- creates, or whose password the owner resets, has to be given a new password
@@ -58,7 +62,7 @@ INSERT INTO `settings` (`key`, `value`, `description`) VALUES
 -- ---------------------------------------------------------------------------
 INSERT INTO `admin_users` (`username`, `full_name`, `email`, `password_hash`, `role`, `must_change_password`) VALUES
   ('owner', 'Shop Owner', NULL,
-   '$2y$10$b1m/tTffcktnNNwL1Fruiex8JRe1J3S4QTHyUF.OnoVnmYxwz80lO',
+   '$2y$10$.....................................................',
    'owner', 0);
 
 -- ---------------------------------------------------------------------------

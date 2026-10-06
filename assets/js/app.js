@@ -70,16 +70,130 @@
 
   /* --- Confirmation ----------------------------------------------------------
      Any element with data-confirm asks before its action runs. Used on
-     destructive admin actions such as cancelling an order.                    */
+     destructive admin actions such as cancelling an order.
+
+     The browser's own confirm box cannot be styled, names the host in its
+     title bar and reads like a security warning, so this builds the question
+     as part of the shop instead. It is a <dialog>, which means focus
+     trapping, Esc and the backdrop are the browser's job rather than ours.
+
+     Optional attributes on the trigger:
+       data-confirm-title   heading, default "Please confirm"
+       data-confirm-action  label on the go-ahead button, default "Confirm"
+     A trigger already styled as destructive (btn-danger, btn-danger-text)
+     gets a destructive button here too, so the 13 existing call sites did not
+     need touching.
+
+     With JavaScript off there is no dialog and no interception: the button is
+     a real submit and the server still asks for a CSRF token, which is the
+     same way the rest of the page degrades.                                  */
+
+  var confirmDialog = null;
+
+  function buildConfirmDialog() {
+    var dialog = document.createElement('dialog');
+    dialog.className = 'modal';
+
+    // method="dialog" means each button closes the dialog and reports itself
+    // in returnValue, so there is no close handler to keep in step.
+    var form = document.createElement('form');
+    form.method = 'dialog';
+    form.className = 'modal-card';
+
+    var title = document.createElement('h2');
+    title.className = 'modal-title';
+
+    var body = document.createElement('p');
+    body.className = 'modal-body';
+
+    var actions = document.createElement('div');
+    actions.className = 'modal-actions';
+
+    var cancel = document.createElement('button');
+    cancel.type = 'submit';
+    cancel.value = 'cancel';
+    cancel.className = 'btn btn-secondary';
+    cancel.textContent = 'Cancel';
+
+    var go = document.createElement('button');
+    go.type = 'submit';
+    go.value = 'confirm';
+    go.className = 'btn';
+
+    actions.appendChild(cancel);
+    actions.appendChild(go);
+    form.appendChild(title);
+    form.appendChild(body);
+    form.appendChild(actions);
+    dialog.appendChild(form);
+    document.body.appendChild(dialog);
+
+    // Clicking the backdrop is a cancel. The card covers the middle, so a
+    // click landing on the dialog itself came from outside it.
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog) {
+        dialog.close('cancel');
+      }
+    });
+
+    return { dialog: dialog, title: title, body: body, go: go, cancel: cancel };
+  }
+
+  function askConfirm(trigger, message) {
+    // No <dialog> support, or no body to attach to: fall back rather than
+    // letting a destructive action through unasked.
+    if (!window.HTMLDialogElement || !document.body) {
+      return Promise.resolve(window.confirm(message));
+    }
+
+    if (!confirmDialog) confirmDialog = buildConfirmDialog();
+
+    var parts = confirmDialog;
+    var danger = /btn-danger/.test(trigger.className || '');
+
+    parts.title.textContent = trigger.getAttribute('data-confirm-title') || 'Please confirm';
+    parts.body.textContent = message;
+    parts.go.textContent = trigger.getAttribute('data-confirm-action')
+      || (danger ? 'Delete' : 'Confirm');
+    parts.go.className = danger ? 'btn btn-danger' : 'btn';
+
+    return new Promise(function (resolve) {
+      parts.dialog.addEventListener('close', function once() {
+        parts.dialog.removeEventListener('close', once);
+        resolve(parts.dialog.returnValue === 'confirm');
+      });
+
+      parts.dialog.returnValue = 'cancel';
+      parts.dialog.showModal();
+
+      // Opening on Cancel: the answer to "shall I delete this" should take a
+      // deliberate move, not an stray press of Enter.
+      parts.cancel.focus();
+    });
+  }
 
   document.addEventListener('click', function (event) {
     var trigger = event.target.closest('[data-confirm]');
     if (!trigger) return;
 
-    if (!window.confirm(trigger.getAttribute('data-confirm'))) {
-      event.preventDefault();
-      event.stopPropagation();
+    // The replayed click after a yes. Clear the mark and let it through.
+    if (trigger.getAttribute('data-confirmed') === 'yes') {
+      trigger.removeAttribute('data-confirmed');
+      return;
     }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    askConfirm(trigger, trigger.getAttribute('data-confirm')).then(function (ok) {
+      if (!ok) return;
+
+      // Replay the click rather than submitting the form directly: a submit
+      // button carries its own name and value to the server, and most of
+      // these say which action was asked for.
+      trigger.setAttribute('data-confirmed', 'yes');
+      trigger.click();
+    });
   });
 
   /* --- Double submit guard ---------------------------------------------------

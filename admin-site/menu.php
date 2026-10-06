@@ -558,9 +558,12 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           <button type="submit" class="btn btn-sm" data-busy-label="Saving">
             <?= $editCategory ? 'Save changes' : 'Add category' ?>
           </button>
-          <?php if ($editCategory): ?>
-            <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>">Cancel</a>
-          <?php endif; ?>
+          <?php /* Offered while adding as well as while editing: the form sits in a
+                    fold, and opening it to add a category used to leave no way to
+                    shut it again. The link closes the fold through the script, and
+                    reloads the page without it, which closes the fold too. */ ?>
+          <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>"
+             data-fold-cancel>Cancel</a>
         </div>
       </form>
       </details>
@@ -757,9 +760,8 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
             <button type="submit" class="btn btn-sm" data-busy-label="Saving">
               <?= $editProduct ? 'Save changes' : 'Add item' ?>
             </button>
-            <?php if ($editProduct): ?>
-              <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>">Cancel</a>
-            <?php endif; ?>
+            <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>"
+               data-fold-cancel>Cancel</a>
           </div>
         </form>
       <?php endif; ?>
@@ -820,6 +822,9 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
           <button type="submit" class="btn" data-busy-label="Adding">
             <?= admin_icon('icon-plus', 'icon-sm') ?> Add these items
           </button>
+
+          <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('menu.php')) ?>"
+             data-fold-cancel>Cancel</a>
         </div>
 
         <p class="tiny subtle mt-3 mb-0">
