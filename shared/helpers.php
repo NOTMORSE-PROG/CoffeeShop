@@ -151,18 +151,59 @@ function normalize_ph_mobile(string $raw): ?string
     $digits = preg_replace('/\D+/', '', $raw) ?? '';
 
     if (str_starts_with($digits, '09') && strlen($digits) === 11) {
-        return '63' . substr($digits, 1);
+        return plausible_ph_subscriber(substr($digits, 1)) ? '63' . substr($digits, 1) : null;
     }
 
     if (str_starts_with($digits, '639') && strlen($digits) === 12) {
-        return $digits;
+        return plausible_ph_subscriber(substr($digits, 2)) ? $digits : null;
     }
 
     if (str_starts_with($digits, '9') && strlen($digits) === 10) {
-        return '63' . $digits;
+        return plausible_ph_subscriber($digits) ? '63' . $digits : null;
     }
 
     return null;
+}
+
+/**
+ * A last sanity check on the nine digits after the leading 9.
+ *
+ * Shape alone let obvious nonsense through: 09999999999 and 09000000000 are
+ * the right length and start correctly, so they normalised happily and the
+ * shop only found out when the text bounced. This refuses a number that is
+ * one digit repeated, and one whose subscriber part is all zeroes.
+ *
+ * Deliberately not a list of network prefixes. Those change whenever a
+ * carrier is allocated a new range, and a shop losing a real customer to a
+ * stale list is worse than letting an improbable number through.
+ */
+function plausible_ph_subscriber(string $tenDigits): bool
+{
+    if (strlen($tenDigits) !== 10) {
+        return false;
+    }
+
+    if (preg_match('/^(\d)\1{9}$/', $tenDigits) === 1) {
+        return false;
+    }
+
+    return substr($tenDigits, 1) !== '000000000';
+}
+
+/** The ten digits the number field holds, from whatever form is stored. */
+function ph_subscriber_digits(string $raw): string
+{
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+
+    if (str_starts_with($digits, '63') && strlen($digits) === 12) {
+        return substr($digits, 2);
+    }
+
+    if (str_starts_with($digits, '0') && strlen($digits) === 11) {
+        return substr($digits, 1);
+    }
+
+    return $digits;
 }
 
 /** Display a mobile number back to the customer in the familiar 09XX form. */

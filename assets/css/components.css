@@ -636,3 +636,52 @@
 
 /* Room for it, so a long heading does not run underneath. */
 .modal-title { padding-right: 2rem; }
+
+/* --- Mobile number field ------------------------------------------------------
+   The country code is not something anyone should have to type or guess at, so
+   it sits in the box as a fixed label and the input holds the ten digits that
+   follow it. */
+
+.phone-field {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.phone-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.phone-prefix {
+  display: grid;
+  place-items: center;
+  padding: 0 var(--space-3);
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: var(--bg-sunken);
+  border-right: 1.5px solid var(--border-strong);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* The border, rounding and focus ring belong to the wrapper now, or they would
+   be drawn twice, one inside the other. */
+.phone-field .input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.phone-field .input:focus,
+.phone-field .input:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}

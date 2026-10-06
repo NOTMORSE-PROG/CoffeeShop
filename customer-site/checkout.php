@@ -173,12 +173,20 @@ customer_head('Checkout', 'Confirm your details and place your order.');
 
               <div class="field">
                 <label class="label" for="phone">Mobile number <span class="req">*</span></label>
-                <input class="input" id="phone" name="phone" type="tel" required
-                       autocomplete="tel" inputmode="numeric" maxlength="20"
-                       placeholder="09171234567"
-                       value="<?= e($form['phone']) ?>"
-                       aria-describedby="<?= isset($errors['phone']) ? 'phone-error' : 'phone-hint' ?>"
-                       <?= isset($errors['phone']) ? 'aria-invalid="true"' : '' ?>>
+                <?php /* The code is fixed and shown, so the box holds only the ten
+                         digits that follow it and nobody has to guess whether to
+                         type the leading zero. */ ?>
+                <div class="phone-field">
+                  <span class="phone-prefix" aria-hidden="true">+63</span>
+                  <input class="input" id="phone" name="phone" type="tel" required
+                         autocomplete="tel" inputmode="numeric"
+                         maxlength="10" minlength="10" pattern="9[0-9]{9}"
+                         placeholder="9171234567"
+                         title="Ten digits beginning with 9, as in 9171234567"
+                         value="<?= e(ph_subscriber_digits($form['phone'])) ?>"
+                         aria-describedby="<?= isset($errors['phone']) ? 'phone-error' : 'phone-hint' ?>"
+                         <?= isset($errors['phone']) ? 'aria-invalid="true"' : '' ?>>
+                </div>
                 <?php if (isset($errors['phone'])): ?>
                   <p class="error-text" id="phone-error"><?= e($errors['phone']) ?></p>
                 <?php else: ?>

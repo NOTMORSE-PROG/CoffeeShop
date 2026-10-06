@@ -75,9 +75,14 @@ customer_head('Track Order', 'Check the status of your order at Our Coffee Shop.
 
         <div class="field">
           <label class="label" for="phone">Mobile number <span class="req">*</span></label>
-          <input class="input" id="phone" name="phone" type="tel" required
-                 placeholder="09171234567" maxlength="20" inputmode="numeric"
-                 value="<?= e($phone) ?>" autocomplete="tel">
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">+63</span>
+            <input class="input" id="phone" name="phone" type="tel" required
+                   placeholder="9171234567" maxlength="10" minlength="10"
+                   pattern="9[0-9]{9}" inputmode="numeric"
+                   title="Ten digits beginning with 9, as in 9171234567"
+                   value="<?= e(ph_subscriber_digits($phone)) ?>" autocomplete="tel">
+          </div>
           <p class="hint">The same number your SMS updates are sent to.</p>
         </div>
 
