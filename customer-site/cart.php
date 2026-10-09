@@ -43,7 +43,9 @@ customer_head('Your Cart', 'Review your order before checkout.');
     <header class="section-head">
       <p class="eyebrow">Almost there</p>
       <h1>Your <span class="accent-text">Cart</span></h1>
-      <p class="lede">Review your drinks before checkout.</p>
+      <p class="lede"><?= $cart['lines'] === []
+          ? 'Nothing in it yet.'
+          : 'Review your drinks before checkout.' ?></p>
     </header>
 
     <?php foreach ($cart['notices'] as $notice): ?>
@@ -52,13 +54,11 @@ customer_head('Your Cart', 'Review your order before checkout.');
 
     <?php if ($cart['lines'] === []): ?>
 
-      <div class="card card-pad">
-        <div class="empty">
-          <?= icon('cart', 'icon') ?>
-          <h3>Your cart is empty</h3>
-          <p>Add some coffee to get started.</p>
-          <p><a class="btn" href="<?= e(url('menu.php')) ?>">Browse the menu <?= icon('arrow-right') ?></a></p>
-        </div>
+      <div class="card empty-panel">
+        <?= icon('cart', 'empty-panel-icon') ?>
+        <h2>Your cart is empty</h2>
+        <p>Add a drink from the menu and it will show up here.</p>
+        <a class="btn btn-lg" href="<?= e(url('menu.php')) ?>">Browse the menu <?= icon('arrow-right') ?></a>
       </div>
 
     <?php else: ?>

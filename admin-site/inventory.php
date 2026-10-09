@@ -232,7 +232,7 @@ admin_header('Inventory', $lowCount === 0
     <form class="filter-bar" method="get" action="<?= e(admin_url('inventory.php')) ?>" data-no-guard>
       <div class="filter-field filter-grow">
         <label class="visually-hidden" for="filter_q">Search items</label>
-        <input class="input" type="search" id="filter_q" name="q" value="<?= e($search) ?>"
+        <input class="input" type="search" id="filter_q" name="q" value="<?= e($search) ?>" autocomplete="off"
                placeholder="Search by name">
       </div>
 

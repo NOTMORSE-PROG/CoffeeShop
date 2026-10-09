@@ -67,7 +67,7 @@ customer_head(
 
     <form class="row row-wrap mb-6" method="get" action="<?= e(url('menu.php')) ?>" role="search" data-no-guard>
       <label class="visually-hidden" for="menu-search">Search the menu</label>
-      <input class="input grow" id="menu-search" type="search" name="q"
+      <input class="input grow" id="menu-search" type="search" name="q" autocomplete="off"
              value="<?= e($search) ?>" placeholder="Search for a drink, for example matcha">
       <button class="btn btn-secondary" type="submit"><?= icon('search') ?> Search</button>
       <?php if ($search !== ''): ?>

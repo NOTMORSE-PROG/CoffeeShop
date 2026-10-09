@@ -457,12 +457,54 @@
 
 /* --- Product detail -------------------------------------------------------------------- */
 
+/* Picture and buy panel on the left, everything you choose on the right. The
+   left column used to hold only the picture, so it sat nearly empty beside a
+   right column that ran off the bottom of the screen - and Add to cart, the
+   one control anyone comes here for, was the furthest thing down the page. */
 .product-detail {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
   gap: var(--space-8);
   align-items: start;
 }
+
+/* Sticky, so the picture, the running total and the button stay put while the
+   options scroll past them. Nothing below 60rem sticks, because there the two
+   columns are stacked and it would cover the thing being chosen. */
+.product-detail-buy {
+  display: grid;
+  gap: var(--space-5);
+  align-content: start;
+}
+
+@media (min-width: 60rem) {
+  .product-detail-buy {
+    position: sticky;
+    top: var(--space-6);
+  }
+}
+
+.product-detail-info { min-width: 0; }
+
+.buy-panel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+.buy-panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* The headline price beside the name. The buy panel shows the running total,
+   which is a different number once an option adds to it. */
+.product-detail-price-lead { margin-bottom: var(--space-6); }
 
 .product-detail-media {
   background: var(--cream-100);
@@ -828,3 +870,35 @@ h2 > .order-ref {
   font-size: var(--text-lg);
   font-weight: 700;
 }
+
+/* --- Empty panel --------------------------------------------------------------
+   An empty cart used to be a .card with its own padding wrapped round an
+   .empty with more padding again, which made a tall white box with a few
+   small words adrift in the middle of it. One container, sized to its
+   contents, with an icon big enough to read as a picture rather than a
+   speck. */
+
+.empty-panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+}
+
+.empty-panel-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--accent);
+  opacity: 0.45;
+}
+
+.empty-panel h2 { margin: 0; }
+
+.empty-panel p {
+  margin: 0;
+  max-width: 28rem;
+  color: var(--text-secondary);
+}
+
+.empty-panel .btn { margin-top: var(--space-3); }

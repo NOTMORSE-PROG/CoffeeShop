@@ -854,7 +854,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
     <form class="filter-bar" method="get" action="<?= e(admin_url('menu.php')) ?>" data-no-guard>
       <div class="filter-field filter-grow">
         <label class="visually-hidden" for="filter_q">Search items</label>
-        <input class="input" type="search" id="filter_q" name="q" value="<?= e($search) ?>"
+        <input class="input" type="search" id="filter_q" name="q" value="<?= e($search) ?>" autocomplete="off"
                placeholder="Search by name or description">
       </div>
 

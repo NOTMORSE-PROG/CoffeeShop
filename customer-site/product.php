@@ -88,17 +88,51 @@ customer_head($product['name'], (string) $product['description']);
       </a>
     </p>
 
-    <div class="product-detail">
-      <div class="product-detail-media">
-        <img src="<?= e(asset(str_replace('assets/', '', (string) $product['image_path']))) ?>"
-             alt="<?= e($product['name']) ?>" width="240" height="240">
+    <?php /* The form wraps both columns: the choices are on the right, the
+             quantity and the button on the left. */ ?>
+    <form class="product-detail" method="post"
+          action="<?= e(url('product.php?id=' . (int) $product['id'])) ?>"
+          data-price-form data-base-price="<?= e((string) $product['price']) ?>">
+      <?= csrf_field() ?>
+
+      <?php /* Sticks on a wide screen, so the picture, the total and Add to
+               cart stay put while the options scroll past them. */ ?>
+      <div class="product-detail-buy">
+        <div class="product-detail-media">
+          <img src="<?= e(asset(str_replace('assets/', '', (string) $product['image_path']))) ?>"
+               alt="<?= e($product['name']) ?>" width="240" height="240">
+        </div>
+
+        <?php if ($available): ?>
+          <div class="buy-panel">
+            <div class="buy-panel-row">
+              <span class="label" id="qty-label">Quantity</span>
+              <div class="qty-control" data-qty>
+                <button type="button" data-qty-down aria-label="Reduce quantity"><?= icon('minus') ?></button>
+                <output aria-labelledby="qty-label">1</output>
+                <button type="button" data-qty-up aria-label="Increase quantity"><?= icon('plus') ?></button>
+                <input class="visually-hidden" type="number" name="quantity"
+                       value="1" min="1" max="<?= CART_MAX_QTY ?>" aria-label="Quantity">
+              </div>
+            </div>
+
+            <div class="buy-panel-row">
+              <span class="label">Total</span>
+              <p class="product-detail-price mb-0" data-price-output><?= peso($product['price']) ?></p>
+            </div>
+
+            <button class="btn btn-lg btn-block" type="submit" data-busy-label="Adding">
+              <?= icon('cart') ?> Add to cart
+            </button>
+          </div>
+        <?php endif; ?>
       </div>
 
-      <div>
+      <div class="product-detail-info">
         <p class="product-category"><?= e($product['category_name']) ?></p>
         <h1><?= e($product['name']) ?></h1>
         <p class="lede"><?= e((string) $product['description']) ?></p>
-        <p class="product-detail-price"><?= peso($product['price']) ?></p>
+        <p class="product-detail-price product-detail-price-lead"><?= peso($product['price']) ?></p>
 
         <?php if (!$available): ?>
           <div class="alert alert-warning">
@@ -113,10 +147,6 @@ customer_head($product['name'], (string) $product['description']);
               <p><?= e($closed) ?> You can still build your cart and check out once we reopen.</p>
             </div>
           <?php endif; ?>
-
-          <form method="post" action="<?= e(url('product.php?id=' . (int) $product['id'])) ?>"
-                data-price-form data-base-price="<?= e((string) $product['price']) ?>">
-            <?= csrf_field() ?>
 
             <?php foreach ($optionGroups as $group):
                 $isSingle = $group['selection_type'] === 'single';
@@ -156,33 +186,10 @@ customer_head($product['name'], (string) $product['description']);
               </fieldset>
             <?php endforeach; ?>
 
-            <div class="mt-6 gap-5 row row-wrap">
-              <div>
-                <span class="label" id="qty-label">Quantity</span>
-                <div class="qty-control" data-qty>
-                  <button type="button" data-qty-down aria-label="Reduce quantity"><?= icon('minus') ?></button>
-                  <output aria-labelledby="qty-label">1</output>
-                  <button type="button" data-qty-up aria-label="Increase quantity"><?= icon('plus') ?></button>
-                  <input class="visually-hidden" type="number" name="quantity"
-                         value="1" min="1" max="<?= CART_MAX_QTY ?>" aria-label="Quantity">
-                </div>
-              </div>
-
-              <div class="grow">
-                <span class="label">Total</span>
-                <p class="product-detail-price mb-0" data-price-output><?= peso($product['price']) ?></p>
-              </div>
-            </div>
-
-            <button class="mt-5 btn btn-lg btn-block" type="submit"
-                    data-busy-label="Adding">
-              <?= icon('cart') ?> Add to cart
-            </button>
-          </form>
 
         <?php endif; ?>
       </div>
-    </div>
+    </form>
   </div>
 </section>
 

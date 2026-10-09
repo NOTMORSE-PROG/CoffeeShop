@@ -118,7 +118,7 @@ admin_header('Orders', $totalOrders === 1 ? '1 order found.' : number_format($to
   <div class="filter-grid">
     <div class="field">
       <label class="label" for="q">Search</label>
-      <input class="input" type="search" id="q" name="q" value="<?= e($filters['q']) ?>"
+      <input class="input" type="search" id="q" name="q" value="<?= e($filters['q']) ?>" autocomplete="off"
              placeholder="Reference, name or number" maxlength="80">
     </div>
 
