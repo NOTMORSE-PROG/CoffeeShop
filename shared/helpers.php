@@ -143,35 +143,84 @@ function get_string(string $key, string $default = ''): string
  * Normalise a Philippine mobile number to the 639XXXXXXXXX form Semaphore
  * expects. Returns null when the number is not a valid PH mobile number.
  *
- * Accepts 09171234567, 639171234567, +639171234567 and spaced or dashed
- * variants of each.
+ * Accepts 09171234567, 639171234567, +639171234567, the bare ten digits, and
+ * spaced or dashed variants of each. Numbers beginning 08 are mobile too -
+ * DITO's whole range is 0895 to 0898 - so the leading digit is not assumed.
  */
 function normalize_ph_mobile(string $raw): ?string
 {
     $digits = preg_replace('/\D+/', '', $raw) ?? '';
 
-    if (str_starts_with($digits, '09') && strlen($digits) === 11) {
-        return plausible_ph_subscriber(substr($digits, 1)) ? '63' . substr($digits, 1) : null;
-    }
-
-    if (str_starts_with($digits, '639') && strlen($digits) === 12) {
-        return plausible_ph_subscriber(substr($digits, 2)) ? $digits : null;
-    }
-
     /*
-     * 63 followed by the whole 09XXXXXXXXX - thirteen digits. It is what you
-     * get by putting +63 in front of a number already written the local way,
-     * which people do often enough that refusing it is just rude.
+     * Take the country code off, however it was written. The length test is
+     * what stops a local number that happens to begin 63 losing its first two
+     * digits: a subscriber number is ten, so anything longer still has a
+     * country code on the front.
      */
-    if (str_starts_with($digits, '630') && strlen($digits) === 13) {
-        return plausible_ph_subscriber(substr($digits, 3)) ? '63' . substr($digits, 3) : null;
+    if (str_starts_with($digits, '63') && strlen($digits) > 10) {
+        $digits = substr($digits, 2);
     }
 
-    if (str_starts_with($digits, '9') && strlen($digits) === 10) {
-        return plausible_ph_subscriber($digits) ? '63' . $digits : null;
+    // Then the trunk zero, which survives +63 being typed in front of a
+    // number already written the local way.
+    if (str_starts_with($digits, '0') && strlen($digits) === 11) {
+        $digits = substr($digits, 1);
     }
 
-    return null;
+    if (strlen($digits) !== 10) {
+        return null;
+    }
+
+    return plausible_ph_subscriber($digits) ? '63' . $digits : null;
+}
+
+/**
+ * The network prefixes Philippine operators actually use, as the three digits
+ * after the leading zero - so 0917 is '917'.
+ *
+ * ADDING TO THIS LIST: when a customer is wrongly turned away, put their
+ * prefix here. That is the whole maintenance story. An allocation we have not
+ * heard about is the one way this check can hurt, so the list errs towards
+ * letting things through: everything below is or has been in service, and
+ * where a range is split between brands it is listed once.
+ *
+ * What it exists to catch is the 090x block and similar, which no network has
+ * ever been given - the kind of number that is accepted, queued, and then
+ * fails silently on the handset.
+ */
+function ph_mobile_prefixes(): array
+{
+    static $prefixes = null;
+
+    if ($prefixes !== null) {
+        return $prefixes;
+    }
+
+    $list = [
+        // Globe, TM and GOMO
+        '905', '906', '915', '916', '917', '926', '927', '935', '936',
+        '937', '945', '953', '954', '955', '956', '957', '958', '959', '965',
+        '966', '967', '975', '976', '977', '978', '979', '994', '995', '996',
+        '997',
+
+        // Smart, TNT and the former Sun ranges
+        '907', '908', '909', '910', '911', '912', '913', '914', '918',
+        '919', '920', '921', '922', '923', '924', '925', '928', '929', '930',
+        '931', '932', '933', '934', '938', '939', '940', '941', '942', '943',
+        '944', '946', '947', '948', '949', '950', '951', '961', '963', '968',
+        '969', '970', '971', '972', '973', '974', '980', '981', '982', '989',
+        '992', '998', '999',
+
+        /*
+         * DITO. These are the only mobile prefixes in the 08 range, which is
+         * why normalize_ph_mobile cannot assume a number starts with 9.
+         */
+        '895', '896', '897', '898', '991', '993',
+    ];
+
+    $prefixes = array_fill_keys($list, true);
+
+    return $prefixes;
 }
 
 /**
@@ -196,7 +245,13 @@ function plausible_ph_subscriber(string $tenDigits): bool
         return false;
     }
 
-    return substr($tenDigits, 1) !== '000000000';
+    if (substr($tenDigits, 1) === '000000000') {
+        return false;
+    }
+
+    // The three digits that identify the network: 9171575437 gives '917',
+    // and a DITO number 8951234567 gives '895'.
+    return isset(ph_mobile_prefixes()[substr($tenDigits, 0, 3)]);
 }
 
 /** The ten digits the number field holds, from whatever form is stored. */

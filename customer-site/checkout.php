@@ -180,9 +180,9 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                   <span class="phone-prefix" aria-hidden="true">+63</span>
                   <input class="input" id="phone" name="phone" type="tel" required
                          autocomplete="off" inputmode="numeric"
-                         maxlength="10" minlength="10" pattern="9[0-9]{9}"
+                         maxlength="10" minlength="10" pattern="[89][0-9]{9}"
                          placeholder="9171234567"
-                         title="Ten digits beginning with 9, as in 9171234567"
+                         title="The ten digits after +63, as in 9171234567"
                          value="<?= e(ph_subscriber_digits($form['phone'])) ?>"
                          aria-describedby="<?= isset($errors['phone']) ? 'phone-error' : 'phone-hint' ?>"
                          <?= isset($errors['phone']) ? 'aria-invalid="true"' : '' ?>>
