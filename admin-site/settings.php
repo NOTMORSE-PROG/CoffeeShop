@@ -58,6 +58,17 @@ const SETTING_GROUPS = [
 const SETTING_HIDDEN = [
     'sms_device_token', 'sms_device_last_seen', 'sms_device_last_ip', 'sms_device_name',
     'sms_batch_size', 'sms_ttl_minutes', 'sms_max_attempts', 'sms_claim_timeout_seconds',
+
+    /*
+     * Which way the texts leave the building is a deployment decision, made
+     * once when the system is set up, not something the person running a
+     * coffee shop should be offered a dropdown for. Turning texts on and off
+     * is what they actually want, and sms_enabled does that.
+     *
+     * sms_sender_name goes with it: it only means anything to Semaphore, and
+     * Semaphore is not the provider this shop uses.
+     */
+    'sms_provider', 'sms_sender_name',
 ];
 
 const SETTING_BOOLEANS = [
