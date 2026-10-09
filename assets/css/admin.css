@@ -11,9 +11,13 @@
 
 /* --- Sprite icons ----------------------------------------------------------- */
 
+/* The reset makes every svg a block, which puts an icon meant to sit in a
+   sentence on a line of its own. Icons are inline; the reset still covers the
+   pictures it was written for. */
 .icon,
 .icon-sm,
 .icon-xs {
+  display: inline-block;
   flex: none;
   fill: none;
   stroke: currentColor;

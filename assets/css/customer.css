@@ -3,7 +3,12 @@
    Loaded after tokens.css, base.css and components.css.
    --------------------------------------------------------------------------- */
 
+/* The reset makes every svg a block, which put the little message icon beside
+   "You will get SMS updates" on a line of its own, hard against the left edge
+   where text-align could not reach it. Icons are inline; the reset still
+   covers the pictures it was written for. */
 .icon {
+  display: inline-block;
   width: 1.15em;
   height: 1.15em;
   flex: none;
