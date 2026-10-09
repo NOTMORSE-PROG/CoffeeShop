@@ -78,20 +78,23 @@ admin_head('Sign in', ['bodyClass' => 'admin-auth']);
         </div>
       <?php endif; ?>
 
-      <form method="post" action="<?= e(admin_url('login.php')) ?>" class="stack" autocomplete="on">
+      <form method="post" action="<?= e(admin_url('login.php')) ?>" class="stack" autocomplete="off">
         <?= csrf_field() ?>
 
         <div class="field">
           <label class="label" for="username">Username</label>
           <input class="input" type="text" id="username" name="username"
                  value="<?= e($username) ?>" required autofocus
-                 autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="50">
+                 autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="50">
         </div>
 
         <div class="field">
           <label class="label" for="password">Password</label>
+          <?php /* Asked for explicitly. Chrome ignores autocomplete on a
+                   credential field and may still offer a password it has
+                   saved; that is the browser's own prompt, not the page's. */ ?>
           <input class="input" type="password" id="password" name="password"
-                 required autocomplete="current-password" maxlength="200">
+                 required autocomplete="off" maxlength="200">
         </div>
 
         <button type="submit" class="btn btn-lg btn-block" data-busy-label="Signing in">
