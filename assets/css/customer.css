@@ -525,7 +525,14 @@
   font-weight: 700;
 }
 
-.option-group + .option-group { margin-top: var(--space-5); }
+/* The grey square round each group was the browser's default fieldset border,
+   drawn round tiles that are already cards. It is reset in base.css now; what
+   separates one group from the next is the heading and a hairline. */
+.option-group + .option-group {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
 
 .option-group-head {
   display: flex;
