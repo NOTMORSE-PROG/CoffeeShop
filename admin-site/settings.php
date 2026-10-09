@@ -31,14 +31,18 @@ const SETTING_GROUPS = [
         'blurb' => 'Customers scan your GCash QR and you confirm the payment yourself on each order.',
         'keys'  => ['payment_cash_enabled', 'payment_gcash_enabled', 'gcash_name', 'gcash_number', 'gcash_qr_path'],
     ],
-    'SMS delivery' => [
-        'blurb' => 'Texts can go out from the shop phone, which uses your own call and text '
-                 . 'plan and costs nothing per message, or through a paid service.',
-        'keys'  => ['sms_enabled', 'sms_provider', 'sms_sender_name'],
-    ],
-    'SMS timing' => [
-        'blurb' => 'Every message here is one text. Switch off any status the shop does not need.',
-        'keys'  => ['sms_on_pending', 'sms_on_preparing', 'sms_on_ready',
+    /*
+     * One tab, not two. "SMS delivery" held the master switch beside a choice
+     * of provider and a sender name, and both of those are deployment details
+     * the shop owner does not set - so once they were hidden the tab was a
+     * single switch under a blurb about picking between services. The switch
+     * belongs with the messages it governs.
+     */
+    'Text updates' => [
+        'blurb' => 'Texts go out from the shop phone and cost nothing per message. '
+                 . 'Every status below is one text; switch off any the shop does not need.',
+        'keys'  => ['sms_enabled',
+                    'sms_on_pending', 'sms_on_preparing', 'sms_on_ready',
                     'sms_on_out_for_delivery', 'sms_on_completed', 'sms_on_cancelled'],
     ],
 ];
