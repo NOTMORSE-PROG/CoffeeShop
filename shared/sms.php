@@ -282,10 +282,25 @@ function sms_claim_batch(string $deviceId): array
             array_merge([mb_substr($deviceId, 0, 64)], $ids)
         );
 
+        /*
+         * The handset is given a dialable number, not the bare 639XXXXXXXXX
+         * that is stored.
+         *
+         * Stored form is what Semaphore wants and what the rest of the system
+         * compares on, but handed to a phone it is ambiguous - no country
+         * code marker, and too long to be a local number - and every send
+         * failed with Android's generic error. A literal test on the shop
+         * handset went through the moment the number was written in a form a
+         * phone recognises.
+         *
+         * The plus is kept rather than converting to 09XXXXXXXXX because the
+         * macro only sends when the number contains 639, and the local form
+         * would never match that.
+         */
         return array_map(
             static fn (array $row): array => [
                 'id'      => (int) $row['id'],
-                'to'      => (string) $row['phone'],
+                'to'      => '+' . ltrim((string) $row['phone'], '+'),
                 'message' => (string) $row['message'],
             ],
             $rows
