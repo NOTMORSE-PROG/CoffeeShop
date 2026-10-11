@@ -29,7 +29,9 @@ const SETTING_GROUPS = [
     ],
     'Payment' => [
         'blurb' => 'Customers scan your GCash QR and you confirm the payment yourself on each order.',
-        'keys'  => ['payment_cash_enabled', 'payment_gcash_enabled', 'gcash_name', 'gcash_number', 'gcash_qr_path'],
+        'keys'  => ['payment_cash_enabled',
+                    'payment_gcash_enabled', 'gcash_name', 'gcash_number', 'gcash_qr_path',
+                    'payment_maya_enabled', 'maya_name', 'maya_number', 'maya_qr_path'],
     ],
     /*
      * One tab, not two. "SMS delivery" held the master switch beside a choice
@@ -77,7 +79,7 @@ const SETTING_HIDDEN = [
 
 const SETTING_BOOLEANS = [
     'accepting_orders', 'low_stock_alert', 'delivery_enabled',
-    'payment_cash_enabled', 'payment_gcash_enabled', 'sms_enabled',
+    'payment_cash_enabled', 'payment_gcash_enabled', 'payment_maya_enabled', 'sms_enabled',
     'sms_on_pending', 'sms_on_preparing', 'sms_on_ready',
     'sms_on_out_for_delivery', 'sms_on_completed', 'sms_on_cancelled',
 ];
@@ -100,6 +102,10 @@ const SETTING_LABELS = [
     'gcash_name'              => 'GCash account name',
     'gcash_number'            => 'GCash number',
     'gcash_qr_path'           => 'GCash QR image path',
+    'payment_maya_enabled'    => 'Allow Maya',
+    'maya_name'               => 'Maya account name',
+    'maya_number'             => 'Maya number',
+    'maya_qr_path'            => 'Maya QR image path',
     'sms_enabled'             => 'Send SMS notifications',
     'sms_provider'            => 'Send texts through',
     'sms_sender_name'         => 'Semaphore sender name',
@@ -239,45 +245,54 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
      * checkout page needs no changes: it already renders whatever path it
      * finds and falls back to "not uploaded yet" when the file is missing.
      */
-    $qrCurrent = trim((string) setting('gcash_qr_path', ''));
+    /*
+     * The same handling for every wallet rather than a copy per wallet. Each
+     * one posts <wallet>_qr to upload and <wallet>_qr_remove to clear, and the
+     * stored path is <wallet>_qr_path.
+     */
     $qrChanged = false;
 
-    if (isset($_POST['gcash_qr_remove'])) {
-        if (is_uploaded_image($qrCurrent)) {
-            delete_uploaded_image($qrCurrent);
+    foreach (shop_wallets() as $method => $wallet) {
+        $qrKey     = $wallet['qr_key'];
+        $qrCurrent = trim((string) setting($qrKey, ''));
+
+        if (isset($_POST[$method . '_qr_remove'])) {
+            if (is_uploaded_image($qrCurrent)) {
+                delete_uploaded_image($qrCurrent);
+            }
+
+            set_setting($qrKey, '');
+
+            audit('settings.updated', 'settings', $qrKey,
+                'Removed the ' . $wallet['label'] . ' QR picture', [$qrKey => $qrCurrent],
+                [$qrKey => ''], (int) $admin['id']);
+
+            flash('success', $wallet['label'] . ' QR removed.');
+            redirect('settings.php');
         }
 
-        set_setting('gcash_qr_path', '');
+        $qrUpload = handle_image_upload($_FILES[$method . '_qr'] ?? null);
 
-        audit('settings.updated', 'settings', 'gcash_qr_path',
-            'Removed the GCash QR picture', ['gcash_qr_path' => $qrCurrent],
-            ['gcash_qr_path' => ''], (int) $admin['id']);
-
-        flash('success', 'GCash QR removed.');
-        redirect('settings.php');
-    }
-
-    $qrUpload = handle_image_upload($_FILES['gcash_qr'] ?? null);
-
-    if (!$qrUpload['ok']) {
-        flash('error', (string) $qrUpload['error']);
-        redirect('settings.php');
-    }
-
-    if (empty($qrUpload['skipped'])) {
-        // Only ever removes a file this system put there, never the artwork
-        // that ships with it.
-        if ($qrCurrent !== '' && $qrCurrent !== $qrUpload['path'] && is_uploaded_image($qrCurrent)) {
-            delete_uploaded_image($qrCurrent);
+        if (!$qrUpload['ok']) {
+            flash('error', (string) $qrUpload['error']);
+            redirect('settings.php');
         }
 
-        set_setting('gcash_qr_path', (string) $qrUpload['path']);
+        if (empty($qrUpload['skipped'])) {
+            // Only ever removes a file this system put there, never the
+            // artwork that ships with it.
+            if ($qrCurrent !== '' && $qrCurrent !== $qrUpload['path'] && is_uploaded_image($qrCurrent)) {
+                delete_uploaded_image($qrCurrent);
+            }
 
-        audit('settings.updated', 'settings', 'gcash_qr_path',
-            'Uploaded a new GCash QR picture', ['gcash_qr_path' => $qrCurrent],
-            ['gcash_qr_path' => $qrUpload['path']], (int) $admin['id']);
+            set_setting($qrKey, (string) $qrUpload['path']);
 
-        $qrChanged = true;
+            audit('settings.updated', 'settings', $qrKey,
+                'Uploaded a new ' . $wallet['label'] . ' QR picture', [$qrKey => $qrCurrent],
+                [$qrKey => $qrUpload['path']], (int) $admin['id']);
+
+            $qrChanged = true;
+        }
     }
 
     $posted  = is_array($_POST['settings'] ?? null) ? $_POST['settings'] : [];
@@ -435,7 +450,15 @@ admin_header('Settings', 'Only the owner can change these.');
             $inputId = 'setting_' . $key;
             ?>
 
-            <?php if ($key === 'gcash_qr_path'): ?>
+            <?php
+            // Which wallet, if any, this key is the QR for.
+            $qrWallet = null;
+            foreach (shop_wallets() as $wMethod => $w) {
+                if ($w['qr_key'] === $key) { $qrWallet = ['method' => $wMethod] + $w; break; }
+            }
+            ?>
+
+            <?php if ($qrWallet !== null): ?>
               <?php
               /*
                * An upload, not a path. The owner has the QR as a picture on
@@ -451,7 +474,8 @@ admin_header('Settings', 'Only the owner can change these.');
                 <div class="qr-field">
                   <div class="qr-preview">
                     <?php if ($qrHere): ?>
-                      <img src="<?= e(admin_picture($value)) ?>" alt="The GCash QR currently shown at checkout"
+                      <img src="<?= e(admin_picture($value)) ?>"
+                           alt="The <?= e($qrWallet['label']) ?> QR currently shown at checkout"
                            width="104" height="104">
                     <?php else: ?>
                       <span class="qr-empty"><?= admin_icon('icon-alert', 'icon-sm') ?> None yet</span>
@@ -459,16 +483,18 @@ admin_header('Settings', 'Only the owner can change these.');
                   </div>
 
                   <div class="qr-controls">
-                    <input class="input" type="file" id="<?= e($inputId) ?>" name="gcash_qr"
+                    <input class="input" type="file" id="<?= e($inputId) ?>"
+                           name="<?= e($qrWallet['method']) ?>_qr"
                            accept="image/jpeg,image/png,image/gif,image/webp">
                     <p class="hint">
-                      A screenshot of your GCash QR is fine. JPG, PNG, GIF or WebP, up to 2 MB.
+                      A screenshot of your <?= e($qrWallet['label']) ?> QR is fine.
+                      JPG, PNG, GIF or WebP, up to 2 MB.
                       <?= $qrHere ? 'Choosing a new one replaces the current picture.' : '' ?>
                     </p>
 
                     <?php if ($qrHere): ?>
                       <label class="choice choice-sm">
-                        <input type="checkbox" name="gcash_qr_remove" value="1">
+                        <input type="checkbox" name="<?= e($qrWallet['method']) ?>_qr_remove" value="1">
                         <span><span class="choice-title">Remove the current QR</span></span>
                       </label>
                     <?php endif; ?>

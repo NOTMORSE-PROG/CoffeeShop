@@ -105,3 +105,12 @@ Desktop.ini
 # Deployment credentials, never committed
 .deploy-env
 .env.production
+
+# Payment QR images carry the owner's name and number, and this remote is
+# public. They are uploaded through the admin at runtime and land in the
+# ignored uploads folder; a stray one dropped at the repo root is a mistake,
+# so the root is not a place images may live.
+/*.jpg
+/*.jpeg
+/*.png
+/*.webp

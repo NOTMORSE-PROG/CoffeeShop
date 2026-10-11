@@ -199,7 +199,7 @@ CREATE TABLE `orders` (
   `order_type`           ENUM('pickup','delivery') NOT NULL DEFAULT 'pickup',
   `delivery_address`     VARCHAR(255) NULL,
   `delivery_city`        VARCHAR(80)  NULL,
-  `payment_method`       ENUM('cash','gcash') NOT NULL DEFAULT 'cash',
+  `payment_method`       ENUM('cash','gcash','maya') NOT NULL DEFAULT 'cash',
   `payment_status`       ENUM('unpaid','paid') NOT NULL DEFAULT 'unpaid',
   `payment_reference`    VARCHAR(80)  NULL COMMENT 'GCash reference typed by the customer, verified manually by the admin',
   `payment_verified_by`  INT UNSIGNED NULL,

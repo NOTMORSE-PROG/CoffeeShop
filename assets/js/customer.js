@@ -102,7 +102,9 @@
   if (checkout) {
     var deliveryFields = checkout.querySelector('.delivery-fields');
     var addressInput = checkout.querySelector('[name="delivery_address"]');
-    var gcashPanel = checkout.querySelector('[data-gcash-panel]');
+    // One panel per wallet now, so the whole set is collected and the
+    // chosen one shown. Was a single GCash panel.
+    var walletPanels = checkout.querySelectorAll('[data-wallet-panel]');
 
     var syncOrderType = function () {
       var picked = checkout.querySelector('input[name="order_type"]:checked');
@@ -122,13 +124,15 @@
 
     var syncPayment = function () {
       var picked = checkout.querySelector('input[name="payment_method"]:checked');
-      if (!gcashPanel) return;
+      var chosen = picked ? picked.value : '';
 
-      if (picked && picked.value === 'gcash') {
-        gcashPanel.removeAttribute('hidden');
-      } else {
-        gcashPanel.setAttribute('hidden', '');
-      }
+      Array.prototype.forEach.call(walletPanels, function (panel) {
+        if (panel.getAttribute('data-wallet-panel') === chosen) {
+          panel.removeAttribute('hidden');
+        } else {
+          panel.setAttribute('hidden', '');
+        }
+      });
     };
 
     /* Keep the summary honest as the choice changes. The server prices the

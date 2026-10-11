@@ -144,10 +144,18 @@ function place_order(array $cart, array $customer): array
     $subtotal    = $priced['subtotal'];
     $total       = round($subtotal + $deliveryFee, 2);
 
-    $paymentMethod = ($customer['payment_method'] ?? 'cash') === 'gcash' ? 'gcash' : 'cash';
+    $requested = (string) ($customer['payment_method'] ?? 'cash');
+    $wallets   = shop_wallets();
 
-    if ($paymentMethod === 'gcash' && !setting_bool('payment_gcash_enabled', true)) {
-        return ['ok' => false, 'errors' => ['GCash is not available at the moment.']];
+    // Anything that is not a wallet we know about is cash, so a tampered form
+    // cannot store a method the rest of the system has never heard of.
+    $paymentMethod = isset($wallets[$requested]) ? $requested : 'cash';
+
+    if ($paymentMethod !== 'cash' && !setting_bool($wallets[$paymentMethod]['enabled_key'], false)) {
+        return [
+            'ok'     => false,
+            'errors' => [$wallets[$paymentMethod]['label'] . ' is not available at the moment.'],
+        ];
     }
     if ($paymentMethod === 'cash' && !setting_bool('payment_cash_enabled', true)) {
         return ['ok' => false, 'errors' => ['Payment at the counter is not available at the moment.']];

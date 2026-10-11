@@ -30,7 +30,8 @@ if ($closed !== null) {
 
 $deliveryOn = delivery_available();
 $cashOn     = setting_bool('payment_cash_enabled', true);
-$gcashOn    = setting_bool('payment_gcash_enabled', true);
+$wallets    = enabled_wallets();
+$gcashOn    = isset($wallets['gcash']);
 $freeCity   = (string) setting('free_delivery_city', '');
 $flatFee    = setting_float('delivery_fee', 0.0);
 
@@ -43,7 +44,7 @@ $form = [
     'order_type'           => 'pickup',
     'delivery_address'     => '',
     'delivery_city'        => $freeCity !== '' ? $freeCity : '',
-    'payment_method'       => $cashOn ? 'cash' : 'gcash',
+    'payment_method'       => $cashOn ? 'cash' : (string) (array_key_first($wallets) ?? 'cash'),
     'special_instructions' => '',
 ];
 
@@ -55,7 +56,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $form['order_type']           = post_string('order_type', 'pickup') === 'delivery' ? 'delivery' : 'pickup';
     $form['delivery_address']     = clean_text(post_string('delivery_address'), 255);
     $form['delivery_city']        = clean_text(post_string('delivery_city'), 80);
-    $form['payment_method']       = post_string('payment_method', 'cash') === 'gcash' ? 'gcash' : 'cash';
+    $posted = post_string('payment_method', 'cash');
+    $form['payment_method'] = isset($wallets[$posted]) ? $posted : 'cash';
     $form['special_instructions'] = clean_text(post_string('special_instructions'), 400);
 
     if (!valid_person_name($form['name'])) {
@@ -81,7 +83,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
     }
 
-    if ($form['payment_method'] === 'gcash' && !$gcashOn) {
+    if ($form['payment_method'] !== 'cash' && !isset($wallets[$form['payment_method']])) {
         $errors['payment_method'] = 'GCash is not available at the moment.';
     }
     if ($form['payment_method'] === 'cash' && !$cashOn) {
@@ -285,33 +287,40 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                 </label>
               <?php endif; ?>
 
-              <?php if ($gcashOn): ?>
+              <?php foreach ($wallets as $method => $wallet): ?>
                 <label class="choice">
-                  <input type="radio" name="payment_method" value="gcash"
-                         <?= $form['payment_method'] === 'gcash' ? 'checked' : '' ?>>
+                  <input type="radio" name="payment_method" value="<?= e($method) ?>"
+                         <?= $form['payment_method'] === $method ? 'checked' : '' ?>>
                   <span>
-                    <span class="choice-title"><?= icon('wallet') ?> GCash</span>
+                    <span class="choice-title"><?= icon('wallet') ?> <?= e($wallet['label']) ?></span>
                     <span class="choice-note">Scan the shop QR and send your payment.</span>
                   </span>
                 </label>
-              <?php endif; ?>
+              <?php endforeach; ?>
             </div>
 
             <?php if (isset($errors['payment_method'])): ?>
               <p class="error-text"><?= e($errors['payment_method']) ?></p>
             <?php endif; ?>
 
-            <?php if ($gcashOn): ?>
-              <div class="gcash-panel" data-gcash-panel
-                   <?= $form['payment_method'] === 'gcash' ? '' : 'hidden' ?>>
+            <?php /* One panel per wallet. Only the chosen one is shown, and the
+                      script swaps them as the choice changes; with no script
+                      the right one is already visible because the server knows
+                      which is selected. */ ?>
+            <?php foreach ($wallets as $method => $wallet): ?>
+              <?php
+              $qrPath   = (string) setting($wallet['qr_key'], '');
+              $qrFile   = $qrPath !== '' ? APP_ROOT . '/' . ltrim($qrPath, '/') : '';
+              $walName  = (string) setting($wallet['name_key'], '');
+              $walNum   = (string) setting($wallet['number_key'], '');
+              ?>
+              <div class="gcash-panel" data-wallet-panel="<?= e($method) ?>"
+                   <?= $form['payment_method'] === $method ? '' : 'hidden' ?>>
                 <div class="gcash-qr">
-                  <?php
-                  $qrPath = (string) setting('gcash_qr_path', '');
-                  $qrFile = $qrPath !== '' ? APP_ROOT . '/' . ltrim($qrPath, '/') : '';
-                  ?>
                   <?php if ($qrFile !== '' && is_file($qrFile)): ?>
                     <img src="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>"
-                         alt="GCash QR code for the shop" width="128" height="128">
+                         alt="<?= e($wallet['label']) ?> QR code for the shop"
+                         width="128" height="128">
                   <?php else: ?>
                     <span class="p-2 small muted center">
                       QR code not uploaded yet
@@ -320,24 +329,20 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                 </div>
 
                 <div>
-                  <p class="bold mb-2">Pay with GCash</p>
-                  <?php
-                  $gcashName   = (string) setting('gcash_name', '');
-                  $gcashNumber = (string) setting('gcash_number', '');
-                  ?>
-                  <?php if ($gcashName !== '' || $gcashNumber !== ''): ?>
+                  <p class="bold mb-2">Pay with <?= e($wallet['label']) ?></p>
+                  <?php if ($walName !== '' || $walNum !== ''): ?>
                     <p class="small mb-2">
-                      <?= e($gcashName) ?><?= $gcashNumber !== '' ? ' &middot; ' . e($gcashNumber) : '' ?>
+                      <?= e($walName) ?><?= $walNum !== '' ? ' &middot; ' . e($walNum) : '' ?>
                     </p>
                   <?php endif; ?>
                   <p class="small muted mb-0">
-                    Scan the QR and send <?= peso($total) ?>. Keep your GCash receipt and show it
-                    when you collect. The shop confirms your payment manually before your order
-                    is marked as paid.
+                    Scan the QR and send <?= peso($total) ?>. Keep your <?= e($wallet['label']) ?>
+                    receipt and show it when you collect. The shop confirms your payment manually
+                    before your order is marked as paid.
                   </p>
                 </div>
               </div>
-            <?php endif; ?>
+            <?php endforeach; ?>
           </fieldset>
 
           <!-- Notes -->

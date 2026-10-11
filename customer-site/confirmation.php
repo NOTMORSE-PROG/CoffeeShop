@@ -125,7 +125,7 @@ customer_head('Order ' . $order['order_ref'], 'Your order has been received.');
       <div class="order-meta-item">
         <span class="label-sm">Payment</span>
         <span>
-          <?= $order['payment_method'] === 'gcash' ? 'GCash' : 'Cash' ?>
+          <?= e(payment_method_label((string) $order['payment_method'])) ?>
           <span class="badge badge-<?= e($order['payment_status']) ?>">
             <?= $order['payment_status'] === 'paid' ? 'Paid' : 'Not yet paid' ?>
           </span>

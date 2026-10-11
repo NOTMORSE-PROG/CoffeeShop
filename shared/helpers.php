@@ -140,6 +140,59 @@ function get_string(string $key, string $default = ''): string
 }
 
 /**
+ * The e-wallets the shop can take, and the settings behind each one.
+ *
+ * Both work the same way and always have: a static QR the customer scans and
+ * a payment the owner confirms by hand on the order. There is no merchant API
+ * and no payment processor behind either of them.
+ *
+ * One list because six places used to know the word "gcash" - the checkout
+ * radios, the QR panel, the settings form, the upload handler, the order view
+ * and the confirmation page. Adding a second wallet by editing six files is
+ * how the fifth one ends up missing.
+ */
+function shop_wallets(): array
+{
+    return [
+        'gcash' => [
+            'label'       => 'GCash',
+            'enabled_key' => 'payment_gcash_enabled',
+            'name_key'    => 'gcash_name',
+            'number_key'  => 'gcash_number',
+            'qr_key'      => 'gcash_qr_path',
+        ],
+        'maya' => [
+            'label'       => 'Maya',
+            'enabled_key' => 'payment_maya_enabled',
+            'name_key'    => 'maya_name',
+            'number_key'  => 'maya_number',
+            'qr_key'      => 'maya_qr_path',
+        ],
+    ];
+}
+
+/** The wallets actually switched on, keyed by payment method. */
+function enabled_wallets(): array
+{
+    return array_filter(
+        shop_wallets(),
+        static fn (array $w): bool => setting_bool($w['enabled_key'], false)
+    );
+}
+
+/** How a payment method should read on screen. */
+function payment_method_label(string $method): string
+{
+    $wallets = shop_wallets();
+
+    if (isset($wallets[$method])) {
+        return $wallets[$method]['label'];
+    }
+
+    return $method === 'cash' ? 'Cash at the counter' : ucfirst($method);
+}
+
+/**
  * Why a mobile number was refused, in a sentence the person can act on.
  *
  * Returns null when the number is fine. One generic line used to cover every

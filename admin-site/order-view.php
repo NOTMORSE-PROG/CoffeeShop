@@ -403,7 +403,7 @@ admin_header(
       <div class="card-body">
         <dl class="detail-list">
           <dt>Method</dt>
-          <dd><?= $order['payment_method'] === 'gcash' ? 'GCash' : 'Cash at the counter' ?></dd>
+          <dd><?= e(payment_method_label((string) $order['payment_method'])) ?></dd>
 
           <?php if (!empty($order['payment_reference'])): ?>
             <dt>Reference</dt>
@@ -416,7 +416,7 @@ admin_header(
           <?php endif; ?>
         </dl>
 
-        <?php if ($order['payment_method'] === 'gcash' && $order['payment_status'] !== 'paid'): ?>
+        <?php if ($order['payment_method'] !== 'cash' && $order['payment_status'] !== 'paid'): ?>
           <div class="alert alert-warning">
             <div>
               GCash here is a static QR code. Check the money actually landed in the shop's
