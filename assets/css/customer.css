@@ -949,3 +949,37 @@ h2 > .order-ref {
   height: auto;
   border-radius: var(--radius);
 }
+
+/* The expand mark sitting on the QR itself. The line of text under it is easy
+   to read straight past, especially on a phone where the eye goes to the
+   picture. */
+/* The frame is what the badge is positioned against - the link itself also
+   holds the hint line, so anchoring to that would drop the badge below the
+   picture. */
+.qr-zoom-frame {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.qr-zoom-badge {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  background: rgba(32, 23, 19, 0.62);
+  line-height: 0;
+  pointer-events: none;
+  transition: background var(--transition);
+}
+
+.qr-zoom:hover .qr-zoom-badge,
+.qr-zoom:focus-visible .qr-zoom-badge { background: var(--accent); }
+
+/* The icon beside the hint text sits on the text baseline, not the badge. */
+.qr-zoom-hint .icon { vertical-align: -0.2em; }

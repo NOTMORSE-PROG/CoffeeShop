@@ -324,10 +324,16 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                              point a camera at. */ ?>
                     <a class="qr-zoom" data-qr-zoom="<?= e($wallet['label']) ?>"
                        href="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>">
-                      <img src="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>"
-                           alt="<?= e($wallet['label']) ?> QR code for the shop"
-                           width="128" height="128">
-                      <span class="qr-zoom-hint">Tap to enlarge</span>
+                      <?php /* The badge is anchored to the picture, so it needs a
+                               frame of its own - the link also holds the hint
+                               line underneath. */ ?>
+                      <span class="qr-zoom-frame">
+                        <img src="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>"
+                             alt="<?= e($wallet['label']) ?> QR code for the shop"
+                             width="128" height="128">
+                        <span class="qr-zoom-badge" aria-hidden="true"><?= icon('expand') ?></span>
+                      </span>
+                      <span class="qr-zoom-hint"><?= icon('expand') ?> Tap to enlarge</span>
                     </a>
                   <?php else: ?>
                     <span class="p-2 small muted center">

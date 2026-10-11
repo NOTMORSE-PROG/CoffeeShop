@@ -77,7 +77,13 @@ function admin_asset(string $path): string
     $url  = $root . '/' . ltrim($path, '/');
 
     // Only the files that change with the code need stamping.
-    if (preg_match('/\.(css|js)$/', $path)) {
+    /*
+     * The icon sprite counts too. Every icon on the site comes out of that
+     * one file, assets/ is served with a long expiry, and without a stamp a
+     * returning visitor keeps whichever version they already have - so a
+     * newly added icon renders as an empty box for them and nobody else.
+     */
+    if (preg_match('/\.(css|js|svg)$/', $path)) {
         $version = asset_version($path);
         if ($version !== '') {
             $url .= '?v=' . $version;
