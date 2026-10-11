@@ -318,9 +318,17 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                    <?= $form['payment_method'] === $method ? '' : 'hidden' ?>>
                 <div class="gcash-qr">
                   <?php if ($qrFile !== '' && is_file($qrFile)): ?>
-                    <img src="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>"
-                         alt="<?= e($wallet['label']) ?> QR code for the shop"
-                         width="128" height="128">
+                    <?php /* A link to the picture, so without scripting it still
+                             opens full size in the browser. With scripting it
+                             opens in a dialog instead - 128px is too small to
+                             point a camera at. */ ?>
+                    <a class="qr-zoom" data-qr-zoom="<?= e($wallet['label']) ?>"
+                       href="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>">
+                      <img src="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>"
+                           alt="<?= e($wallet['label']) ?> QR code for the shop"
+                           width="128" height="128">
+                      <span class="qr-zoom-hint">Tap to enlarge</span>
+                    </a>
                   <?php else: ?>
                     <span class="p-2 small muted center">
                       QR code not uploaded yet

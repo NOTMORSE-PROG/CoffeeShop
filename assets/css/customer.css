@@ -914,3 +914,38 @@ h2 > .order-ref {
 }
 
 .empty-panel .btn { margin-top: var(--space-3); }
+
+/* --- The payment QR thumbnail --------------------------------------------------
+   A thumbnail that says it can be opened. The dialog version is sized to the
+   viewport so it fills a phone screen, which is the whole point - a camera
+   needs more than 128 pixels to read a QR code. */
+
+.qr-zoom {
+  display: block;
+  position: relative;
+  line-height: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.qr-zoom-hint {
+  display: block;
+  padding: var(--space-1) 0;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.qr-zoom:hover .qr-zoom-hint,
+.qr-zoom:focus-visible .qr-zoom-hint { color: var(--accent); }
+
+.qr-dialog { width: min(26rem, calc(100vw - 2rem)); }
+
+.qr-dialog .modal-card { justify-items: center; }
+
+.qr-dialog-image {
+  width: min(22rem, calc(100vw - 6rem));
+  height: auto;
+  border-radius: var(--radius);
+}

@@ -195,4 +195,70 @@
       window.location.reload();
     });
   }
+
+  /* --- The payment QR, big enough to point a camera at -------------------------
+     128px is fine as a thumbnail and useless as a QR code, particularly on the
+     phone the customer is holding. The thumbnail is a link to the picture, so
+     with no script it opens full size the ordinary way; here it opens in a
+     dialog instead, which keeps the checkout form filled in behind it.      */
+
+  (function qrZoom() {
+    if (!window.HTMLDialogElement) return;
+
+    var dialog = null;
+    var image = null;
+    var caption = null;
+
+    function build() {
+      dialog = document.createElement('dialog');
+      dialog.className = 'modal qr-dialog';
+
+      var card = document.createElement('div');
+      card.className = 'modal-card';
+
+      var close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'modal-close';
+      close.setAttribute('aria-label', 'Close');
+      close.textContent = '\u00d7';
+      close.addEventListener('click', function () { dialog.close(); });
+
+      caption = document.createElement('h2');
+      caption.className = 'modal-title';
+
+      image = document.createElement('img');
+      image.className = 'qr-dialog-image';
+      image.alt = '';
+
+      card.appendChild(close);
+      card.appendChild(caption);
+      card.appendChild(image);
+      dialog.appendChild(card);
+      document.body.appendChild(dialog);
+
+      dialog.addEventListener('click', function (event) {
+        if (event.target === dialog) dialog.close();
+      });
+    }
+
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest('[data-qr-zoom]');
+      if (!link) return;
+
+      // Leave the browser's own shortcuts alone.
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      event.preventDefault();
+
+      if (!dialog) build();
+
+      var label = link.getAttribute('data-qr-zoom') || 'Payment';
+      caption.textContent = 'Scan with ' + label;
+      image.alt = label + ' QR code for the shop';
+      image.src = link.getAttribute('href');
+
+      dialog.showModal();
+    });
+  })();
+
 })();
