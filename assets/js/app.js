@@ -79,7 +79,7 @@
 
   /* --- The mobile number field ------------------------------------------------
      The box holds the ten digits after +63, but people paste and type the
-     number every other way: +639171575437, 09171575437, with spaces, with
+     number every other way: +639171234567, 09171234567, with spaces, with
      dashes, and +63 in front of a number that already starts with 0.
 
      Rather than refuse those and leave someone guessing, each is reduced to
@@ -95,13 +95,18 @@
         digits = digits.slice(2);
       }
 
-      // The local leading zero, including the one left behind by +630...
-      if (digits.length > 10 && digits.indexOf('0') === 0) {
-        digits = digits.slice(1);
-      }
-      if (digits.length === 11 && digits.indexOf('0') === 0) {
-        digits = digits.slice(1);
-      }
+      /*
+       * Any leading zero, not just one in a number of the right length.
+       *
+       * The zero is the national trunk prefix and it is always dropped once
+       * the country code is there - +63 0917... is not a number anyone can
+       * dial. The box already shows +63, so a zero typed into it is wrong
+       * from the first keystroke rather than only once the length gives it
+       * away, and it should not be possible to leave one sitting there.
+       *
+       * Safe for the 08 prefixes too: 0895 loses the zero and keeps the 8.
+       */
+      digits = digits.replace(/^0+/, '');
 
       return digits.slice(0, 10);
     }

@@ -140,6 +140,61 @@ function get_string(string $key, string $default = ''): string
 }
 
 /**
+ * Why a mobile number was refused, in a sentence the person can act on.
+ *
+ * Returns null when the number is fine. One generic line used to cover every
+ * case, which told someone two digits short exactly as much as it told
+ * someone whose prefix no network uses - that is to say, nothing.
+ *
+ * The order matters: it answers the first question a person would ask of
+ * their own typing, not the first test that happens to fail.
+ */
+function ph_mobile_error(string $raw): ?string
+{
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+
+    if ($digits === '') {
+        return 'Please give a mobile number so we can text you about your order.';
+    }
+
+    // Strip the country code and the trunk zero the same way the normaliser
+    // does, so the advice is about the part that identifies the subscriber.
+    if (str_starts_with($digits, '63') && strlen($digits) > 10) {
+        $digits = substr($digits, 2);
+    }
+    $digits = ltrim($digits, '0');
+
+    /*
+     * Before the length, because a landline is the more useful thing to say.
+     * An 02 Manila number is nine digits once the trunk zero is off, so
+     * checking length first would only ever call it short.
+     */
+    if (!str_starts_with($digits, '9') && !str_starts_with($digits, '8')) {
+        return 'A Philippine mobile number starts with 9, or 8 on DITO. That looks like a landline.';
+    }
+
+    if (strlen($digits) < 10) {
+        return 'That number is too short. A Philippine mobile number has ten digits after +63, like 9171234567.';
+    }
+
+    if (strlen($digits) > 10) {
+        return 'That number is too long. A Philippine mobile number has ten digits after +63, like 9171234567.';
+    }
+
+    if (!plausible_ph_subscriber($digits)) {
+        $prefix = '0' . substr($digits, 0, 3);
+
+        if (preg_match('/^(\d)\1{9}$/', $digits) === 1 || substr($digits, 1) === '000000000') {
+            return 'That does not look like a real mobile number. Please check it.';
+        }
+
+        return 'No Philippine network uses ' . $prefix . '. Please check the number.';
+    }
+
+    return null;
+}
+
+/**
  * What a row in the SMS log means, in words that do not overstate it.
  *
  * The server never watches a text leave the handset. A row reaches "sent"
@@ -279,7 +334,7 @@ function plausible_ph_subscriber(string $tenDigits): bool
         return false;
     }
 
-    // The three digits that identify the network: 9171575437 gives '917',
+    // The three digits that identify the network: 9171234567 gives '917',
     // and a DITO number 8951234567 gives '895'.
     return isset(ph_mobile_prefixes()[substr($tenDigits, 0, 3)]);
 }

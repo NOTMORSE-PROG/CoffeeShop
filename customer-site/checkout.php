@@ -63,7 +63,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
 
     if (normalize_ph_mobile($form['phone']) === null) {
-        $errors['phone'] = 'Please give a valid Philippine mobile number, for example 09171234567.';
+        // Says what is actually wrong - too short, a prefix no network uses,
+        // a landline - rather than one line for every case.
+        $errors['phone'] = ph_mobile_error($form['phone'])
+            ?? 'Please give a valid Philippine mobile number, for example 09171234567.';
     }
 
     if ($form['order_type'] === 'delivery') {

@@ -156,7 +156,11 @@ function place_order(array $cart, array $customer): array
     $phone = normalize_ph_mobile((string) ($customer['phone'] ?? ''));
 
     if ($phone === null) {
-        return ['ok' => false, 'errors' => ['Please give a valid Philippine mobile number, for example 09171234567.']];
+        return [
+            'ok'     => false,
+            'errors' => [ph_mobile_error((string) ($customer['phone'] ?? ''))
+                ?? 'Please give a valid Philippine mobile number, for example 09171234567.'],
+        ];
     }
 
     /*
