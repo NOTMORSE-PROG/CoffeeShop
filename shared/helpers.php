@@ -140,6 +140,31 @@ function get_string(string $key, string $default = ''): string
 }
 
 /**
+ * What a row in the SMS log means, in words that do not overstate it.
+ *
+ * The server never watches a text leave the handset. A row reaches "sent"
+ * because the phone said so, and the macro says so the moment it collects the
+ * message rather than after the network has taken it - the ok=1 is a constant
+ * in the URL. So "Sent" would be the system vouching for something it has no
+ * way to see, which is exactly how the admin came to show Sent for a week of
+ * texts that never left the phone.
+ *
+ * Lives here rather than in sms.php because the admin layout includes this
+ * file on every page, and the order view, the analytics chart and the handset
+ * panel all need it.
+ */
+function sms_status_label(string $status): string
+{
+    return match ($status) {
+        'sent'    => 'Handed to the phone',
+        'queued'  => 'Waiting for the phone',
+        'failed'  => 'Failed',
+        'skipped' => 'Skipped',
+        default   => ucfirst($status),
+    };
+}
+
+/**
  * Normalise a Philippine mobile number to the 639XXXXXXXXX form Semaphore
  * expects. Returns null when the number is not a valid PH mobile number.
  *

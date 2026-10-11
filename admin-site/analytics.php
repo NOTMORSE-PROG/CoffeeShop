@@ -197,7 +197,7 @@ $chartData = [
         'values' => array_values($hourCounts),
     ],
     'sms' => [
-        'labels' => ['Sent', 'Failed', 'Skipped', 'Queued'],
+        'labels' => array_map('sms_status_label', ['sent', 'failed', 'skipped', 'queued']),
         'keys'   => ['sent', 'failed', 'skipped', 'queued'],
         'values' => array_values($smsCounts),
     ],

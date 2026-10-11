@@ -285,7 +285,7 @@ admin_header(
                   <td class="small"><?= e(status_label((string) ($sms['trigger_status'] ?? ''), (string) $order['order_type'])) ?></td>
                   <td>
                     <span class="badge <?= e($smsBadge((string) $sms['status'])) ?>">
-                      <?= e(ucfirst((string) $sms['status'])) ?>
+                      <?= e(sms_status_label((string) $sms['status'])) ?>
                     </span>
                   </td>
                   <td class="small">

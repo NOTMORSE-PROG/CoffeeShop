@@ -592,7 +592,7 @@ $connected = $seenAgo !== null && $seenAgo < 600;
         <p class="handset-stat<?= $queue['queued'] > 0 ? ' is-warn' : '' ?>"><?= (int) $queue['queued'] ?></p>
       </div>
       <div>
-        <span class="label-sm">Sent today</span>
+        <span class="label-sm">Handed over today</span>
         <p class="handset-stat"><?= (int) $queue['sent_today'] ?></p>
       </div>
       <div>
