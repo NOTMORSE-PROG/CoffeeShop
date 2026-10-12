@@ -121,7 +121,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
 }
 
-$deliveryFee = $form['order_type'] === 'delivery'
+// No fee is quoted for a city the shop will not serve - the summary should not
+// price an order the form has just refused.
+$deliveryFee = $form['order_type'] === 'delivery' && delivers_to_city($form['delivery_city'])
     ? delivery_fee_for_city($form['delivery_city'])
     : 0.0;
 
@@ -258,8 +260,14 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                 <?php if (isset($errors['delivery_city'])): ?>
                   <p class="error-text"><?= e($errors['delivery_city']) ?></p>
                 <?php elseif ($freeCity !== ''): ?>
-                  <p class="hint"><?= icon('truck') ?> Free within <?= e($freeCity) ?>.
-                    The other cities carry a <?= peso(setting_float('delivery_fee', 0.0)) ?> fee.</p>
+                  <?php /* With no fee set there is nothing to warn about, and
+                           "the other cities carry a 0.00 fee" reads as a fault. */ ?>
+                  <?php if ($flatFee > 0): ?>
+                    <p class="hint"><?= icon('truck') ?> Free within <?= e($freeCity) ?>.
+                      The other cities carry a <?= peso($flatFee) ?> delivery fee.</p>
+                  <?php else: ?>
+                    <p class="hint"><?= icon('truck') ?> Delivery is free to every city we serve.</p>
+                  <?php endif; ?>
                 <?php endif; ?>
               </div>
 
