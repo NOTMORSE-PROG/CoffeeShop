@@ -240,17 +240,6 @@ customer_head('Checkout', 'Confirm your details and place your order.');
 
             <div class="delivery-fields mt-4" <?= $form['order_type'] === 'delivery' ? '' : 'hidden' ?>>
               <div class="field">
-                <label class="label" for="delivery_address">Delivery address <span class="req">*</span></label>
-                <textarea class="textarea" id="delivery_address" name="delivery_address"
-                          maxlength="255" autocomplete="off"
-                          placeholder="House or unit number, street, barangay"
-                          <?= isset($errors['delivery_address']) ? 'aria-invalid="true"' : '' ?>><?= e($form['delivery_address']) ?></textarea>
-                <?php if (isset($errors['delivery_address'])): ?>
-                  <p class="error-text"><?= e($errors['delivery_address']) ?></p>
-                <?php endif; ?>
-              </div>
-
-              <div class="field">
                 <label class="label" for="delivery_city">City <span class="req">*</span></label>
                 <?php /* A list, not a free-text box. The shop delivers to four
                          cities; typing a fifth only produces an order nobody
@@ -271,6 +260,17 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                 <?php elseif ($freeCity !== ''): ?>
                   <p class="hint"><?= icon('truck') ?> Free within <?= e($freeCity) ?>.
                     The other cities carry a <?= peso(setting_float('delivery_fee', 0.0)) ?> fee.</p>
+                <?php endif; ?>
+              </div>
+
+              <div class="field">
+                <label class="label" for="delivery_address">Delivery address <span class="req">*</span></label>
+                <textarea class="textarea" id="delivery_address" name="delivery_address"
+                          maxlength="255" autocomplete="off"
+                          placeholder="House or unit number, street, barangay"
+                          <?= isset($errors['delivery_address']) ? 'aria-invalid="true"' : '' ?>><?= e($form['delivery_address']) ?></textarea>
+                <?php if (isset($errors['delivery_address'])): ?>
+                  <p class="error-text"><?= e($errors['delivery_address']) ?></p>
                 <?php endif; ?>
               </div>
 
