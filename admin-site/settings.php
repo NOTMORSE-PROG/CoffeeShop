@@ -25,7 +25,8 @@ const SETTING_GROUPS = [
     ],
     'Ordering & Delivery' => [
         'blurb' => 'You arrange the delivery yourself. The fee is a flat amount you set here.',
-        'keys'  => ['delivery_enabled', 'delivery_fee', 'free_delivery_city', 'delivery_note'],
+        'keys'  => ['delivery_enabled', 'delivery_cities', 'free_delivery_city',
+                    'delivery_fee', 'delivery_note'],
     ],
     'Payment' => [
         'blurb' => 'Customers scan your GCash QR and you confirm the payment yourself on each order.',
@@ -95,6 +96,7 @@ const SETTING_LABELS = [
     'low_stock_alert'         => 'Warn me about low stock',
     'delivery_enabled'        => 'Offer delivery',
     'delivery_fee'            => 'Flat delivery fee',
+    'delivery_cities'         => 'Cities you deliver to',
     'free_delivery_city'      => 'City with free delivery',
     'delivery_note'           => 'Delivery note at checkout',
     'payment_cash_enabled'    => 'Allow paying at the counter',
@@ -132,7 +134,8 @@ function setting_field_type(string $key): string
     return match ($key) {
         'shop_open_time', 'shop_close_time' => 'time',
         'delivery_fee'                      => 'money',
-        'delivery_note', 'shop_address'     => 'textarea',
+        'delivery_note', 'shop_address',
+        'delivery_cities'                   => 'textarea',
         'sms_provider'                      => 'choice',
         'sms_batch_size', 'sms_ttl_minutes',
         'sms_max_attempts', 'sms_claim_timeout_seconds' => 'number',

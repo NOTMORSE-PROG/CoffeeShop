@@ -140,6 +140,13 @@ function place_order(array $cart, array $customer): array
         return ['ok' => false, 'errors' => ['Please give a delivery address.']];
     }
 
+    if ($orderType === 'delivery' && !delivers_to_city($deliveryCity)) {
+        return [
+            'ok'     => false,
+            'errors' => ['The shop does not deliver to that city yet. Please choose one from the list.'],
+        ];
+    }
+
     $deliveryFee = $orderType === 'delivery' ? delivery_fee_for_city($deliveryCity) : 0.0;
     $subtotal    = $priced['subtotal'];
     $total       = round($subtotal + $deliveryFee, 2);

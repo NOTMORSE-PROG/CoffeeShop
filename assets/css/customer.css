@@ -920,12 +920,28 @@ h2 > .order-ref {
    viewport so it fills a phone screen, which is the whole point - a camera
    needs more than 128 pixels to read a QR code. */
 
-.qr-zoom {
-  display: block;
-  position: relative;
-  line-height: 0;
-  border-radius: var(--radius);
-  overflow: hidden;
+/* The link IS the square: it carries .gcash-qr as well, so it keeps the fixed
+   128px box, the border and the overflow clip. The caption lives outside it,
+   because anything inside that box gets clipped along with the taller QRs. */
+.qr-thumb {
+  flex: none;
+  display: grid;
+  gap: var(--space-1);
+  justify-items: center;
+}
+
+.qr-zoom { position: relative; }
+
+/* Pinned to the box rather than sized by percentages. The holder is a grid and
+   height: 100% against an auto track does not resolve, which left a portrait
+   QR rendering 242px tall inside a 128px box and clipped in half. Absolute
+   positioning gives object-fit a definite box to contain within. */
+.qr-zoom img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .qr-zoom-hint {
@@ -953,15 +969,6 @@ h2 > .order-ref {
 /* The expand mark sitting on the QR itself. The line of text under it is easy
    to read straight past, especially on a phone where the eye goes to the
    picture. */
-/* The frame is what the badge is positioned against - the link itself also
-   holds the hint line, so anchoring to that would drop the badge below the
-   picture. */
-.qr-zoom-frame {
-  position: relative;
-  display: block;
-  line-height: 0;
-}
-
 .qr-zoom-badge {
   position: absolute;
   right: var(--space-2);

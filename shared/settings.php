@@ -125,6 +125,52 @@ function delivery_fee_for_city(?string $city): float
     return setting_float('delivery_fee', 0.0);
 }
 
+/**
+ * The cities the shop will deliver to, in the order they are offered.
+ *
+ * One per line in Settings. The checkout dropdown is built from this, and an
+ * order is refused if its city is not on it - a city the shop does not serve
+ * is an order nobody can fulfil, so it should not be selectable and should not
+ * survive a tampered form either.
+ */
+function delivery_cities(): array
+{
+    $raw = (string) setting('delivery_cities', '');
+
+    $cities = array_values(array_filter(array_map(
+        static fn (string $line): string => trim($line),
+        preg_split('/[\r\n,]+/', $raw) ?: []
+    ), static fn (string $c): bool => $c !== ''));
+
+    // The free city is always deliverable, even if the owner forgets to list
+    // it, because the whole fee rule is written around it.
+    $free = trim((string) setting('free_delivery_city', ''));
+
+    if ($free !== '' && !in_array(strtolower($free), array_map('strtolower', $cities), true)) {
+        array_unshift($cities, $free);
+    }
+
+    return $cities;
+}
+
+/** Whether the shop delivers to this city at all. */
+function delivers_to_city(?string $city): bool
+{
+    if ($city === null || trim($city) === '') {
+        return false;
+    }
+
+    $wanted = strtolower(trim($city));
+
+    foreach (delivery_cities() as $known) {
+        if (strtolower($known) === $wanted) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /** Whether customers may choose delivery at all. */
 function delivery_available(): bool
 {

@@ -79,7 +79,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $errors['delivery_address'] = 'Please give the address we should deliver to.';
         }
         if ($form['delivery_city'] === '') {
-            $errors['delivery_city'] = 'Please give the city.';
+            $errors['delivery_city'] = 'Please choose the city we are delivering to.';
+        } elseif (!delivers_to_city($form['delivery_city'])) {
+            $errors['delivery_city'] = 'The shop does not deliver to that city yet.';
         }
     }
 
@@ -250,14 +252,25 @@ customer_head('Checkout', 'Confirm your details and place your order.');
 
               <div class="field">
                 <label class="label" for="delivery_city">City <span class="req">*</span></label>
-                <input class="input" id="delivery_city" name="delivery_city" type="text"
-                       maxlength="80" autocomplete="off"
-                       value="<?= e($form['delivery_city']) ?>"
-                       <?= isset($errors['delivery_city']) ? 'aria-invalid="true"' : '' ?>>
+                <?php /* A list, not a free-text box. The shop delivers to four
+                         cities; typing a fifth only produces an order nobody
+                         can fulfil. */ ?>
+                <select class="select" id="delivery_city" name="delivery_city"
+                        <?= isset($errors['delivery_city']) ? 'aria-invalid="true"' : '' ?>>
+                  <option value="">Choose a city</option>
+                  <?php foreach (delivery_cities() as $city): ?>
+                    <option value="<?= e($city) ?>"<?= $form['delivery_city'] === $city ? ' selected' : '' ?>>
+                      <?= e($city) ?><?= delivery_fee_for_city($city) <= 0
+                          ? ' - free delivery'
+                          : ' - ' . peso(delivery_fee_for_city($city)) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
                 <?php if (isset($errors['delivery_city'])): ?>
                   <p class="error-text"><?= e($errors['delivery_city']) ?></p>
                 <?php elseif ($freeCity !== ''): ?>
-                  <p class="hint"><?= icon('truck') ?> Free delivery within <?= e($freeCity) ?>.</p>
+                  <p class="hint"><?= icon('truck') ?> Free within <?= e($freeCity) ?>.
+                    The other cities carry a <?= peso(setting_float('delivery_fee', 0.0)) ?> fee.</p>
                 <?php endif; ?>
               </div>
 
@@ -316,31 +329,27 @@ customer_head('Checkout', 'Confirm your details and place your order.');
               ?>
               <div class="gcash-panel" data-wallet-panel="<?= e($method) ?>"
                    <?= $form['payment_method'] === $method ? '' : 'hidden' ?>>
-                <div class="gcash-qr">
-                  <?php if ($qrFile !== '' && is_file($qrFile)): ?>
-                    <?php /* A link to the picture, so without scripting it still
-                             opens full size in the browser. With scripting it
-                             opens in a dialog instead - 128px is too small to
-                             point a camera at. */ ?>
-                    <a class="qr-zoom" data-qr-zoom="<?= e($wallet['label']) ?>"
+                <?php if ($qrFile !== '' && is_file($qrFile)): ?>
+                  <?php /* The link fills the square holder and nothing else goes
+                           inside it: the holder clips to 128px, so a caption in
+                           there would be cut off along with the taller QRs. */ ?>
+                  <div class="qr-thumb">
+                    <a class="gcash-qr qr-zoom" data-qr-zoom="<?= e($wallet['label']) ?>"
                        href="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>">
-                      <?php /* The badge is anchored to the picture, so it needs a
-                               frame of its own - the link also holds the hint
-                               line underneath. */ ?>
-                      <span class="qr-zoom-frame">
-                        <img src="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>"
-                             alt="<?= e($wallet['label']) ?> QR code for the shop"
-                             width="128" height="128">
-                        <span class="qr-zoom-badge" aria-hidden="true"><?= icon('expand') ?></span>
-                      </span>
-                      <span class="qr-zoom-hint"><?= icon('expand') ?> Tap to enlarge</span>
+                      <img src="<?= e(asset(str_replace('assets/', '', $qrPath))) ?>"
+                           alt="<?= e($wallet['label']) ?> QR code for the shop"
+                           width="128" height="128">
+                      <span class="qr-zoom-badge" aria-hidden="true"><?= icon('expand') ?></span>
                     </a>
-                  <?php else: ?>
+                    <span class="qr-zoom-hint"><?= icon('expand') ?> Tap to enlarge</span>
+                  </div>
+                <?php else: ?>
+                  <div class="gcash-qr">
                     <span class="p-2 small muted center">
                       QR code not uploaded yet
                     </span>
-                  <?php endif; ?>
-                </div>
+                  </div>
+                <?php endif; ?>
 
                 <div>
                   <p class="bold mb-2">Pay with <?= e($wallet['label']) ?></p>
