@@ -224,17 +224,35 @@
       var pager = document.getElementById('queue-pagination');
       if (pager && data.pagination) {
         var pagination = data.pagination;
-        pager.querySelector('[data-queue-total]').textContent = pagination.total + ' matching orders ? Page ' + pagination.page + ' of ' + pagination.pages;
+        pager.querySelector('[data-queue-total]').textContent = pagination.total + ' matching orders | Page ' + pagination.page + ' of ' + pagination.pages;
         var links = pager.querySelector('[data-queue-pages]');
         links.textContent = '';
-        [['Previous', pagination.page - 1], ['Next', pagination.page + 1]].forEach(function (entry) {
-          if (entry[1] < 1 || entry[1] > pagination.pages) return;
+        var nav = el('nav', 'pager');
+        nav.setAttribute('aria-label', 'Pagination');
+        function pageLink(label, number, current) {
+          if (number < 1 || number > pagination.pages || current) {
+            var disabled = el('span', 'pager-link ' + (current ? 'is-current' : 'is-disabled'), label);
+            if (current) disabled.setAttribute('aria-current', 'page');
+            nav.appendChild(disabled);
+            return;
+          }
           var query = new URLSearchParams(JSON.parse(pager.dataset.filters));
-          query.set('page', String(entry[1]));
-          var link = el('a', 'btn btn-sm btn-secondary', entry[0]);
+          query.set('page', String(number));
+          var link = el('a', 'pager-link', label);
           link.href = pager.dataset.baseUrl + '?' + query.toString();
-          links.appendChild(link);
-        });
+          nav.appendChild(link);
+        }
+        if (pagination.pages > 1) {
+          pageLink('Previous', pagination.page - 1, false);
+          var first = Math.max(1, pagination.page - 2);
+          var last = Math.min(pagination.pages, first + 4);
+          first = Math.max(1, last - 4);
+          for (var number = first; number <= last; number++) {
+            pageLink(String(number), number, number === pagination.page);
+          }
+          pageLink('Next', pagination.page + 1, false);
+          links.appendChild(nav);
+        }
       }
       var signature = JSON.stringify(data.orders);
       if (list.dataset.signature !== signature) lastSignature = null;
