@@ -326,7 +326,7 @@ admin_header(
                   <input type="radio" name="status" value="<?= e($candidate) ?>"
                          <?= $index === 0 ? 'checked' : '' ?> required>
                   <span>
-                    <span class="choice-title"><?= e(status_label($candidate, (string) $order['order_type'])) ?></span>
+                    <span class="choice-title"><?= e(order_action_label($candidate, $orderType)) ?></span>
                     <span class="choice-note">
                       <?php if ($candidate === 'preparing'): ?>
                         Accepts the order and takes the ingredients off stock.
@@ -347,9 +347,9 @@ admin_header(
                      placeholder="Optional. Used as the reason when cancelling.">
             </div>
 
-            <button type="submit" class="btn" data-busy-label="Saving"
+            <button type="submit" class="btn" data-busy-label="Saving" data-status-action
                     data-confirm="Update the status of <?= e((string) $order['order_ref']) ?>?">
-              Update status
+              <?= e(order_action_label($nextStates[0], $orderType)) ?>
             </button>
           </form>
         <?php endif; ?>

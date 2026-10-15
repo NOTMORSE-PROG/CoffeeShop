@@ -82,7 +82,9 @@ function sms_enabled_for_status(string $status): bool
         return false;
     }
 
-    return setting_bool('sms_on_' . $status, false);
+    // Apply the same notification defaults to every payment and fulfilment option.
+    return setting_bool('sms_on_' . $status, in_array($status,
+        ['pending', 'preparing', 'ready', 'out_for_delivery', 'cancelled'], true));
 }
 
 /** Which way messages go out: phone, semaphore, or off. */

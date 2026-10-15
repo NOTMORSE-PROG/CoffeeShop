@@ -47,7 +47,7 @@ function queue_row(array $order): array
 
     $next = [];
     foreach (allowed_next_statuses($status, $type) as $candidate) {
-        $next[] = ['status' => $candidate, 'label' => status_label($candidate, $type)];
+        $next[] = ['status' => $candidate, 'label' => order_action_label($candidate, $type)];
     }
 
     return [
@@ -74,16 +74,53 @@ function queue_row(array $order): array
 /** Everything the dashboard needs, in one payload. */
 function queue_payload(): array
 {
-    $rows = [];
-
-    foreach (order_queue() as $order) {
-        $rows[] = queue_row($order);
-    }
-
+    $data = dashboard_orders();
     return [
-        'ok'           => true,
+        'ok' => true,
         'generated_at' => date('c'),
-        'stats'        => dashboard_stats(),
-        'orders'       => $rows,
+        'stats' => dashboard_stats(),
+        'orders' => array_map('queue_row', $data['orders']),
+        'pagination' => ['page' => $data['page'], 'pages' => $data['pages'], 'total' => $data['total']],
+        'categories' => $data['categories'],
     ];
+}
+
+/** Validated filters shared by initial rendering and live polling. */
+function dashboard_orders(): array
+{
+    $filters = [];
+    $where = [];
+    $params = [];
+    foreach (['status' => array_merge(['active'], array_keys(ORDER_STATUSES)),
+              'order_type' => ['pickup', 'delivery'],
+              'payment_method' => array_merge(['cash'], array_keys(shop_wallets())),
+              'payment_status' => ['paid', 'unpaid']] as $key => $allowed) {
+        $value = get_string($key, $key === 'status' ? 'active' : '');
+        $filters[$key] = in_array($value, $allowed, true) ? $value : '';
+        if ($filters[$key] === 'active' && $key === 'status') {
+            $where[] = "o.status IN ('pending', 'preparing', 'ready', 'out_for_delivery')";
+        } elseif ($filters[$key] !== '') {
+            $where[] = 'o.' . $key . ' = ?';
+            $params[] = $filters[$key];
+        }
+    }
+    $filters['q'] = mb_substr(get_string('q'), 0, 80);
+    if ($filters['q'] !== '') {
+        $where[] = '(o.order_ref LIKE ? OR o.customer_name LIKE ? OR o.customer_phone LIKE ? OR o.customer_phone = ?)';
+        $term = '%' . $filters['q'] . '%';
+        array_push($params, $term, $term, $term, normalize_ph_mobile($filters['q']) ?? $filters['q']);
+    }
+    $filters['sort'] = get_string('sort') === 'oldest' ? 'oldest' : 'recent';
+    $clause = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+    $total = (int) db_value('SELECT COUNT(*) FROM orders o' . $clause, $params);
+    $pages = max(1, (int) ceil($total / 10));
+    $page = min($pages, max(1, get_int('page', 1)));
+    $direction = $filters['sort'] === 'oldest' ? 'ASC' : 'DESC';
+    $orders = db_all('SELECT o.*, (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count
+        FROM orders o' . $clause . " ORDER BY o.placed_at $direction, o.id $direction LIMIT 10 OFFSET " . (($page - 1) * 10), $params);
+    $categories = array_fill_keys(array_keys(ORDER_STATUSES), 0);
+    foreach (db_all('SELECT status, COUNT(*) AS total FROM orders GROUP BY status') as $row) {
+        $categories[$row['status']] = (int) $row['total'];
+    }
+    return compact('orders', 'filters', 'total', 'pages', 'page', 'categories');
 }

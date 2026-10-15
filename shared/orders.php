@@ -580,3 +580,9 @@ function order_queue(array $statuses = ['pending', 'preparing', 'ready', 'out_fo
         $statuses
     );
 }
+
+/** Action wording used consistently by admin status controls. */
+function order_action_label(string $status, string $type): string
+{
+    return $status === 'cancelled' ? 'Cancel order' : 'Update to ' . status_label($status, $type);
+}

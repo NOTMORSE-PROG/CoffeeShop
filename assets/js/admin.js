@@ -97,6 +97,20 @@
     });
   })();
 
+  function updateStatusAction(form) {
+    var selected = form.querySelector('input[name="status"]:checked');
+    var button = form.querySelector('[data-status-action]');
+    if (!selected || !button) return;
+    var label = selected.closest('label').querySelector('.choice-title').textContent;
+    button.textContent = label;
+    button.setAttribute('data-confirm', label + '?');
+    button.classList.toggle('btn-danger', selected.value === 'cancelled');
+  }
+  document.addEventListener('change', function (event) {
+    if (event.target.matches('input[name="status"]')) updateStatusAction(event.target.form);
+  });
+  document.querySelectorAll('[data-status-action]').forEach(function (button) { updateStatusAction(button.form); });
+
   /* --- Live order queue --------------------------------------------------------
      Polls api/queue.php every fifteen seconds. The list is only rebuilt when
      the data actually changed, so a button is never yanked out from under a
@@ -158,6 +172,7 @@
         form.method = 'post';
         form.action = action;
         form.setAttribute('data-no-guard', '');
+        form.setAttribute('data-live-form', '#queue-live');
 
         form.appendChild(hiddenInput('_csrf', csrf));
         form.appendChild(hiddenInput('order_id', String(order.id)));
@@ -186,6 +201,11 @@
 
     function render(data) {
       if (!data || !data.orders) return;
+      // A status POST can replace the live region between polls.
+      list = document.getElementById('order-queue');
+      emptyState = document.querySelector('[data-queue-empty]');
+      stamp = document.querySelector('[data-queue-updated]');
+      if (!list) return;
 
       if (data.stats) {
         Object.keys(data.stats).forEach(function (key) {
@@ -197,7 +217,28 @@
         });
       }
 
+      if (data.categories) Object.keys(data.categories).forEach(function (status) {
+        var count = document.querySelector('[data-category="' + status + '"]');
+        if (count) count.textContent = String(data.categories[status]);
+      });
+      var pager = document.getElementById('queue-pagination');
+      if (pager && data.pagination) {
+        var pagination = data.pagination;
+        pager.querySelector('[data-queue-total]').textContent = pagination.total + ' matching orders ? Page ' + pagination.page + ' of ' + pagination.pages;
+        var links = pager.querySelector('[data-queue-pages]');
+        links.textContent = '';
+        [['Previous', pagination.page - 1], ['Next', pagination.page + 1]].forEach(function (entry) {
+          if (entry[1] < 1 || entry[1] > pagination.pages) return;
+          var query = new URLSearchParams(JSON.parse(pager.dataset.filters));
+          query.set('page', String(entry[1]));
+          var link = el('a', 'btn btn-sm btn-secondary', entry[0]);
+          link.href = pager.dataset.baseUrl + '?' + query.toString();
+          links.appendChild(link);
+        });
+      }
       var signature = JSON.stringify(data.orders);
+      if (list.dataset.signature !== signature) lastSignature = null;
+      list.dataset.signature = signature;
 
       if (signature !== lastSignature) {
         lastSignature = signature;

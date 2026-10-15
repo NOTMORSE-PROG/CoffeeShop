@@ -41,11 +41,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         flash('error', (string) $result['error']);
     }
 
-    redirect('index.php');
+    redirect('index.php' . ($_GET === [] ? '' : '?' . http_build_query($_GET)));
 }
 
 $stats = dashboard_stats();
-$queue = order_queue();
+$queueData = dashboard_orders();
+$queue = $queueData['orders'];
+$filters = $queueData['filters'];
+$queueQuery = http_build_query(array_merge($filters, ['page' => $queueData['page']]));
+$queueAction = admin_url('index.php') . '?' . $queueQuery;
 
 admin_head('Dashboard');
 admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 18 ? 'afternoon' : 'evening'))
@@ -78,6 +82,37 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
   </div>
 </section>
 
+<form class="card filter-bar" method="get" action="<?= e(admin_url('index.php')) ?>" data-no-guard>
+  <div class="filter-grid">
+    <div class="field"><label class="label" for="queue-search">Search orders</label>
+      <input class="input" id="queue-search" type="search" name="q" maxlength="80" value="<?= e($filters['q']) ?>" placeholder="Reference, name or number"></div>
+    <?php foreach ([
+        'status' => ['Category', array_merge(['active' => 'Active orders'], ORDER_STATUSES)],
+        'order_type' => ['Fulfilment', ['pickup' => 'Pickup', 'delivery' => 'Delivery']],
+        'payment_method' => ['Payment method', array_merge(['cash' => 'Cash'], array_map(static fn ($wallet) => $wallet['label'], shop_wallets()))],
+        'payment_status' => ['Payment status', ['paid' => 'Paid', 'unpaid' => 'Unpaid']],
+        'sort' => ['Sort by', ['recent' => 'Newest first', 'oldest' => 'Oldest first']],
+    ] as $key => [$label, $choices]): ?>
+    <div class="field"><label class="label" for="queue-<?= e($key) ?>"><?= e($label) ?></label>
+      <select class="select" id="queue-<?= e($key) ?>" name="<?= e($key) ?>">
+        <?php if ($key !== 'sort'): ?><option value="">All</option><?php endif; ?>
+        <?php foreach ($choices as $value => $text): ?>
+          <option value="<?= e($value) ?>"<?= $filters[$key] === $value ? ' selected' : '' ?>><?= e($text) ?></option>
+        <?php endforeach; ?>
+      </select></div>
+    <?php endforeach; ?>
+  </div>
+  <div class="filter-actions"><button class="btn btn-sm" type="submit">Apply filters</button>
+    <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('index.php')) ?>">Reset</a></div>
+</form>
+<nav class="filter-actions" aria-label="Order categories">
+  <?php foreach (ORDER_STATUSES as $value => $label): ?>
+    <a class="btn btn-sm<?= $filters['status'] === $value ? '' : ' btn-secondary' ?>" href="<?= e(admin_url('index.php') . '?' . http_build_query(array_merge($filters, ['status' => $value]))) ?>">
+      <?= e($label) ?> (<span data-category="<?= e($value) ?>"><?= (int) $queueData['categories'][$value] ?></span>)
+    </a>
+  <?php endforeach; ?>
+</nav>
+
 <section class="card queue-card" id="queue-live" data-live-region>
   <div class="card-header">
     <h2>Order queue</h2>
@@ -86,8 +121,8 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
 
   <div class="card-body">
     <ul class="queue" id="order-queue"
-        data-queue-url="<?= e(admin_url('api/queue.php')) ?>"
-        data-queue-action="<?= e(admin_url('index.php')) ?>"
+        data-queue-url="<?= e(admin_url('api/queue.php') . '?' . $queueQuery) ?>"
+        data-queue-action="<?= e($queueAction) ?>"
         data-csrf="<?= e(csrf_token()) ?>">
       <?php foreach ($queue as $order): ?>
         <?php $row = queue_row($order); ?>
@@ -109,7 +144,7 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
 
           <div class="queue-actions">
             <?php foreach ($row['next_statuses'] as $next): ?>
-              <form method="post" action="<?= e(admin_url('index.php')) ?>" data-no-guard
+              <form method="post" action="<?= e($queueAction) ?>" data-no-guard
                     data-live-form="#queue-live">
                 <?= csrf_field() ?>
                 <input type="hidden" name="order_id" value="<?= (int) $row['id'] ?>">
@@ -132,10 +167,14 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
 
     <div class="empty" data-queue-empty<?= $queue === [] ? '' : ' hidden' ?>>
       <?= admin_icon('icon-check-circle', 'empty-icon') ?>
-      <h3>Nothing in the queue</h3>
-      <p class="mb-0">Every order has been dealt with. New ones will appear here on their own.</p>
+      <h3>No matching orders</h3>
+      <p class="mb-0">Try another category or clear the filters. New matches appear automatically.</p>
     </div>
   </div>
 </section>
 
+<div id="queue-pagination" data-base-url="<?= e(admin_url('index.php')) ?>" data-filters="<?= e(json_encode($filters)) ?>">
+  <p class="small subtle" data-queue-total><?= (int) $queueData['total'] ?> matching orders ? Page <?= (int) $queueData['page'] ?> of <?= (int) $queueData['pages'] ?></p>
+  <div data-queue-pages><?php admin_pagination($queueData['page'], $queueData['pages'], $filters, 'index.php'); ?></div>
+</div>
 <?php admin_footer(); ?>
