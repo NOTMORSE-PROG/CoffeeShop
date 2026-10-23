@@ -169,10 +169,11 @@ drinks by quantity in completed orders over the last 30 days. Before there are r
 one available drink appears as a clearly labelled shop pick. Drinks retain their usual
 categories. The menu refuses changes that would hide or remove the last available drink.
 
-**Dashboard.** Orders open first, with separate Cash and GCash / Maya columns. The Orders
+**Dashboard.** Sales & Best Sellers opens first, showing today's analytics. The Orders
+view has separate Cash and GCash / Maya columns. The Orders
 page uses the same columns for staff and owners. Counts refer to the current page; filters
 and pagination apply to both columns. Dashboard status actions and live refresh retain
-the selected filters. Sales & Best Sellers opens a separate dashboard view, defaulting to
+the selected filters and Orders view. Sales & Best Sellers defaults to
 today in the shop timezone; date controls allow other periods. Sales count completed orders by completion
 date in the shop timezone; pending and cancelled orders are excluded. Sales are order totals,
 including delivery fees, and are separate from manual payment confirmation.

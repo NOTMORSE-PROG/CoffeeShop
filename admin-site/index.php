@@ -19,7 +19,7 @@ if (!is_owner()) {
 }
 
 $admin = current_admin();
-$dashboardView = get_string('view') === 'sales' ? 'sales' : 'orders';
+$dashboardView = get_string('view') === 'orders' ? 'orders' : 'sales';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_post_with_csrf();
@@ -53,7 +53,8 @@ $stats = dashboard_stats();
 $queueData = dashboard_orders();
 $queue = $queueData['orders'];
 $filters = $queueData['filters'];
-$queueQuery = http_build_query(array_merge($filters, ['page' => $queueData['page']]));
+$queueFilters = array_merge($filters, ['view' => 'orders']);
+$queueQuery = http_build_query(array_merge($queueFilters, ['page' => $queueData['page']]));
 $queueAction = admin_url('index.php') . '?' . $queueQuery;
 
 admin_head('Dashboard', ['bodyClass' => 'dashboard-page', 'scripts' => $dashboardView === 'sales' ? [admin_asset('vendor/chart.min.js')] : []]);
@@ -62,8 +63,8 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
 ?>
 
 <nav class="dashboard-views" aria-label="Dashboard views">
-  <a href="<?= e(admin_url('index.php')) ?>"<?= $dashboardView === 'orders' ? ' aria-current="page"' : '' ?>><?= admin_icon('icon-receipt', 'icon-sm') ?> Orders</a>
-  <a href="<?= e(admin_url('index.php')) ?>?view=sales"<?= $dashboardView === 'sales' ? ' aria-current="page"' : '' ?>><?= admin_icon('icon-chart', 'icon-sm') ?> Sales &amp; Best Sellers</a>
+  <a href="<?= e(admin_url('index.php')) ?>"<?= $dashboardView === 'sales' ? ' aria-current="page"' : '' ?>><?= admin_icon('icon-chart', 'icon-sm') ?> Sales &amp; Best Sellers</a>
+  <a href="<?= e(admin_url('index.php')) ?>?view=orders"<?= $dashboardView === 'orders' ? ' aria-current="page"' : '' ?>><?= admin_icon('icon-receipt', 'icon-sm') ?> Orders</a>
 </nav>
 <?php if ($dashboardView === 'sales'): ?>
 <section id="dashboard-analytics" class="dashboard-analytics" aria-label="Sales analytics">
@@ -99,6 +100,7 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
 <details class="card dashboard-filters"<?= array_filter($filters, static fn ($value, $key) => !in_array($key, ['status','sort'], true) && $value !== '', ARRAY_FILTER_USE_BOTH) !== [] ? ' open' : '' ?>>
 <summary>Filter orders <span class="small subtle">Search, fulfilment and payment</span></summary>
 <form class="card filter-bar" method="get" action="<?= e(admin_url('index.php')) ?>" data-no-guard>
+  <input type="hidden" name="view" value="orders">
   <div class="filter-grid">
     <div class="field"><label class="label" for="queue-search">Search orders</label>
       <input class="input" id="queue-search" type="search" name="q" maxlength="80" value="<?= e($filters['q']) ?>" placeholder="Reference, name or number"></div>
@@ -119,11 +121,11 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
     <?php endforeach; ?>
   </div>
   <div class="filter-actions"><button class="btn btn-sm" type="submit">Apply filters</button>
-    <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('index.php')) ?>">Reset</a></div>
+    <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('index.php')) ?>?view=orders">Reset</a></div>
 </form>
 <nav class="filter-actions" aria-label="Order categories">
   <?php foreach (array_replace(ORDER_STATUSES, ['ready' => 'Ready']) as $value => $label): ?>
-    <a class="btn btn-sm<?= $filters['status'] === $value ? '' : ' btn-secondary' ?>" href="<?= e(admin_url('index.php') . '?' . http_build_query(array_merge($filters, ['status' => $value]))) ?>">
+    <a class="btn btn-sm<?= $filters['status'] === $value ? '' : ' btn-secondary' ?>" href="<?= e(admin_url('index.php') . '?' . http_build_query(array_merge($queueFilters, ['status' => $value]))) ?>">
       <?= e($label) ?> (<span data-category="<?= e($value) ?>"><?= (int) $queueData['categories'][$value] ?></span>)
     </a>
   <?php endforeach; ?>
@@ -141,9 +143,9 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
   </div>
 </section>
 
-<div id="queue-pagination" data-base-url="<?= e(admin_url('index.php')) ?>" data-filters="<?= e(json_encode($filters)) ?>">
+<div id="queue-pagination" data-base-url="<?= e(admin_url('index.php')) ?>" data-filters="<?= e(json_encode($queueFilters)) ?>">
   <p class="small subtle" data-queue-total><?= (int) $queueData['total'] ?> matching orders | Page <?= (int) $queueData['page'] ?> of <?= (int) $queueData['pages'] ?></p>
-  <div data-queue-pages><?php admin_pagination($queueData['page'], $queueData['pages'], $filters, 'index.php'); ?></div>
+  <div data-queue-pages><?php admin_pagination($queueData['page'], $queueData['pages'], $queueFilters, 'index.php'); ?></div>
 </div>
 <?php endif; ?>
 <?php admin_footer(); ?>
