@@ -179,7 +179,7 @@ customer_head('Track Order', 'Check the status of your order at Our Coffee Shop.
           <div class="order-meta-item">
             <span class="label-sm">Payment</span>
             <span>
-              <?= $order['payment_method'] === 'gcash' ? 'GCash' : 'Cash' ?>
+              <?= e(payment_method_label((string) $order['payment_method'])) ?>
               <span class="badge badge-<?= e((string) $order['payment_status']) ?>">
                 <?= $order['payment_status'] === 'paid' ? 'Paid' : 'Not yet paid' ?>
               </span>

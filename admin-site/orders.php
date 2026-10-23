@@ -219,7 +219,7 @@ admin_header('Orders', $totalOrders === 1 ? '1 order found.' : number_format($to
             <td class="tabular nowrap"><?= peso($order['total']) ?></td>
             <td>
               <?= payment_badge((string) $order['payment_status']) ?>
-              <span class="tiny subtle"><?= $order['payment_method'] === 'gcash' ? 'GCash' : 'Cash' ?></span>
+              <span class="tiny subtle"><?= e(payment_method_label((string) $order['payment_method'])) ?></span>
             </td>
             <td><?= status_badge((string) $order['status'], (string) $order['order_type']) ?></td>
             <td class="right">
