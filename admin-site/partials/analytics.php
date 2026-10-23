@@ -5,6 +5,7 @@ if (!function_exists('is_owner') || !is_owner()) {
     exit('You do not have permission to open this page.');
 }
 require_once __DIR__ . '/../../shared/reporting.php';
+require_once __DIR__ . '/../../shared/menu-collections.php';
 // --- Date range ------------------------------------------------------------
 // Sales open on the current shop day; other periods are selected explicitly.
 
@@ -69,17 +70,7 @@ foreach (ORDER_STATUSES as $key => $label) {
     $statusValues[] = $statusCounts[$key];
 }
 
-// --- Top sellers -----------------------------------------------------------
-
-$topRows = best_selling_products($from, $to, 10);
-
-$topLabels = [];
-$topValues = [];
-
-foreach ($topRows as $row) {
-    $topLabels[] = (string) $row['product_name'];
-    $topValues[] = (int) $row['quantity'];
-}
+$menuBest = menu_best_sellers();
 
 // --- Orders by hour --------------------------------------------------------
 
@@ -125,10 +116,6 @@ $chartData = [
         'labels' => $statusLabels,
         'keys'   => $statusKeys,
         'values' => $statusValues,
-    ],
-    'top' => [
-        'labels' => $topLabels,
-        'values' => $topValues,
     ],
     'hours' => [
         'labels' => $hourLabels,
@@ -237,21 +224,18 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
     </div>
   </section>
 
-  <section class="card">
-    <div class="card-header">
-      <h2><span aria-hidden="true">&#9733;</span> Best sellers</h2>
-      <?php if ($topValues !== []): ?>
-        <span class="small subtle">Top <?= count($topLabels) ?> by items sold</span>
-      <?php endif; ?>
-    </div>
+  <section class="card dashboard-best-card">
+    <div class="card-header"><h2><span aria-hidden="true">&#9733;</span> Best Sellers</h2><span class="small subtle">Last 30 days</span></div>
     <div class="card-body">
-      <?php if ($topValues === []): ?>
-        <div class="empty"><p class="mb-0">Nothing has been sold in this range yet.</p></div>
-      <?php else: ?>
-        <div class="chart-box chart-box-tall">
-          <canvas id="chart-top" role="img" aria-label="The ten best selling items by quantity"></canvas>
-        </div>
-      <?php endif; ?>
+      <ol class="dashboard-best-list" aria-label="Best Sellers collection">
+        <?php foreach ($menuBest['products'] as $drink): ?>
+          <li>
+            <?php if (!empty($drink['image_path'])): ?><img src="<?= e(admin_picture($drink['image_path'])) ?>" alt="" width="48" height="48"><?php else: ?><span class="menu-thumb menu-thumb-empty" aria-hidden="true"><?= admin_icon('icon-cup') ?></span><?php endif; ?>
+            <div><strong><?= e($drink['name']) ?></strong><p class="small subtle"><?= $menuBest['fallback'] ? 'Shop pick · no recent completed sales' : (int) $drink['sold_quantity'] . ' sold in completed orders' ?></p></div>
+          </li>
+        <?php endforeach; ?>
+      </ol>
+      <a class="small" href="<?= e(admin_url('menu.php')) ?>?category=<?= BEST_SELLERS_CATEGORY_ID ?>">View protected collection</a>
     </div>
   </section>
   <details class="card chart-wide daily-sales-details">

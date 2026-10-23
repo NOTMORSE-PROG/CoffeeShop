@@ -1406,6 +1406,11 @@ a.is-busy { opacity: 0.5; pointer-events: none; }
 .analytics-date-control .filter-actions { flex: 1 1 20rem; margin: 0; }
 .protected-collection { background: var(--accent-soft); border-color: var(--border-strong); }
 .protected-collection .cat-top { flex-wrap: wrap; }
+.dashboard-best-list { list-style: none; margin: 0 0 var(--space-3); padding: 0; max-height: 14rem; overflow-y: auto; }
+.dashboard-best-list li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; }
+.dashboard-best-list img { width: 48px; height: 48px; object-fit: cover; border-radius: var(--radius-sm); flex: none; }
+.dashboard-best-list strong { font-size: var(--text-sm); }
+.dashboard-best-list p { margin: var(--space-1) 0 0; }
 @media (max-width: 1040px) {
   .dashboard-analytics .chart-grid { grid-template-columns: minmax(0, 1fr); }
 }
