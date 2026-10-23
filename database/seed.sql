@@ -84,34 +84,34 @@ INSERT INTO `categories` (`id`, `name`, `slug`, `description`, `sort_order`) VAL
 -- ---------------------------------------------------------------------------
 INSERT INTO `products` (`category_id`, `name`, `slug`, `description`, `price`, `image_path`, `is_featured`, `sort_order`) VALUES
   -- Espresso Base, P95
-  (1, 'Salted Caramel',    'salted-caramel',    'Double shot, caramel and a clean line of sea salt.',        95.00, 'assets/img/products/salted-caramel.svg',    1, 1),
-  (1, 'Caramel Macchiato', 'caramel-macchiato', 'Steamed milk, vanilla, espresso poured over the top.',      95.00, 'assets/img/products/caramel-macchiato.svg', 0, 2),
-  (1, 'Mocha',             'mocha',             'Espresso and dark chocolate, the dependable one.',          95.00, 'assets/img/products/mocha.svg',             0, 3),
-  (1, 'Vanilla Latte',     'vanilla-latte',     'Soft vanilla over a smooth double shot.',                   95.00, 'assets/img/products/vanilla-latte.svg',     0, 4),
-  (1, 'Spanish Latte',     'spanish-latte',     'Sweetened milk, espresso, served cold.',                    95.00, 'assets/img/products/spanish-latte.svg',     0, 5),
+  (1, 'Salted Caramel',    'salted-caramel',    'Double shot, caramel and a clean line of sea salt.',        95.00, 'assets/img/products/salted-caramel.webp',    1, 1),
+  (1, 'Caramel Macchiato', 'caramel-macchiato', 'Steamed milk, vanilla, espresso poured over the top.',      95.00, 'assets/img/products/caramel-macchiato.webp', 0, 2),
+  (1, 'Mocha',             'mocha',             'Espresso and dark chocolate, the dependable one.',          95.00, 'assets/img/products/mocha.webp',             0, 3),
+  (1, 'Vanilla Latte',     'vanilla-latte',     'Soft vanilla over a smooth double shot.',                   95.00, 'assets/img/products/vanilla-latte.webp',     0, 4),
+  (1, 'Spanish Latte',     'spanish-latte',     'Sweetened milk, espresso, served cold.',                    95.00, 'assets/img/products/spanish-latte.webp',     0, 5),
 
   -- Frappe, P99
-  (2, 'Belgium Chocolate', 'belgium-chocolate-frappe', 'Blended chocolate, thick enough to need a spoon.',   99.00, 'assets/img/products/belgium-chocolate-frappe.svg', 1, 1),
-  (2, 'Java Chip',         'java-chip',         'Coffee, chocolate chips, blended cold.',                    99.00, 'assets/img/products/java-chip.svg',         0, 2),
-  (2, 'Matcha Frappe',     'matcha-frappe',     'Stone-ground matcha, blended smooth.',                      99.00, 'assets/img/products/matcha-frappe.svg',     0, 3),
-  (2, 'Cookies and Cream', 'cookies-and-cream', 'Crushed cookies folded through cold cream.',                99.00, 'assets/img/products/cookies-and-cream.svg', 0, 4),
-  (2, 'Caramel Frappe',    'caramel-frappe',    'Caramel all the way through, blended cold.',                99.00, 'assets/img/products/caramel-frappe.svg',    0, 5),
+  (2, 'Belgium Chocolate', 'belgium-chocolate-frappe', 'Blended chocolate, thick enough to need a spoon.',   99.00, 'assets/img/products/belgium-chocolate-frappe.webp', 1, 1),
+  (2, 'Java Chip',         'java-chip',         'Coffee, chocolate chips, blended cold.',                    99.00, 'assets/img/products/java-chip.webp',         0, 2),
+  (2, 'Matcha Frappe',     'matcha-frappe',     'Stone-ground matcha, blended smooth.',                      99.00, 'assets/img/products/matcha-frappe.webp',     0, 3),
+  (2, 'Cookies and Cream', 'cookies-and-cream', 'Crushed cookies folded through cold cream.',                99.00, 'assets/img/products/cookies-and-cream.webp', 0, 4),
+  (2, 'Caramel Frappe',    'caramel-frappe',    'Caramel all the way through, blended cold.',                99.00, 'assets/img/products/caramel-frappe.webp',    0, 5),
 
   -- Non Coffee, P75
-  (3, 'Matcha',            'matcha',            'Just matcha and milk, nothing in the way.',                 75.00, 'assets/img/products/matcha.svg',            0, 1),
-  (3, 'Belgium Chocolate', 'belgium-chocolate', 'Rich cocoa, served hot or cold.',                           75.00, 'assets/img/products/belgium-chocolate.svg', 0, 2),
-  (3, 'White Chocolate',   'white-chocolate',   'Sweet, creamy, easy to finish.',                            75.00, 'assets/img/products/white-chocolate.svg',   0, 3),
-  (3, 'Strawberry Milk',   'strawberry-milk',   'Cold milk and real strawberry.',                            75.00, 'assets/img/products/strawberry-milk.svg',   0, 4),
+  (3, 'Matcha',            'matcha',            'Just matcha and milk, nothing in the way.',                 75.00, 'assets/img/products/matcha.webp',            0, 1),
+  (3, 'Belgium Chocolate', 'belgium-chocolate', 'Rich cocoa, served hot or cold.',                           75.00, 'assets/img/products/belgium-chocolate.webp', 0, 2),
+  (3, 'White Chocolate',   'white-chocolate',   'Sweet, creamy, easy to finish.',                            75.00, 'assets/img/products/white-chocolate.webp',   0, 3),
+  (3, 'Strawberry Milk',   'strawberry-milk',   'Cold milk and real strawberry.',                            75.00, 'assets/img/products/strawberry-milk.webp',   0, 4),
 
   -- Fruity Soda, P50
-  (4, 'Lemon Soda',        'lemon-soda',        'Sharp, cold and properly fizzy.',                           50.00, 'assets/img/products/lemon-soda.svg',        0, 1),
-  (4, 'Mango Soda',        'mango-soda',        'Ripe mango over soda and ice.',                             50.00, 'assets/img/products/mango-soda.svg',        0, 2),
-  (4, 'Blueberry Soda',    'blueberry-soda',    'Deep blueberry, long and cold.',                            50.00, 'assets/img/products/blueberry-soda.svg',    0, 3),
-  (4, 'Green Apple Soda',  'green-apple-soda',  'Tart green apple, very cold.',                              50.00, 'assets/img/products/green-apple-soda.svg',  0, 4),
+  (4, 'Lemon Soda',        'lemon-soda',        'Sharp, cold and properly fizzy.',                           50.00, 'assets/img/products/lemon-soda.webp',        0, 1),
+  (4, 'Mango Soda',        'mango-soda',        'Ripe mango over soda and ice.',                             50.00, 'assets/img/products/mango-soda.webp',        0, 2),
+  (4, 'Blueberry Soda',    'blueberry-soda',    'Deep blueberry, long and cold.',                            50.00, 'assets/img/products/blueberry-soda.webp',    0, 3),
+  (4, 'Green Apple Soda',  'green-apple-soda',  'Tart green apple, very cold.',                              50.00, 'assets/img/products/green-apple-soda.webp',  0, 4),
 
   -- Signature
-  (5, 'Strawberry Chocolate', 'strawberry-chocolate', 'Strawberry and chocolate, layered.',                  75.00, 'assets/img/products/strawberry-chocolate.svg', 1, 1),
-  (5, 'OuR Barista Drink',    'our-barista-drink',    'Whatever the barista is proud of today.',             99.00, 'assets/img/products/our-barista-drink.svg',    1, 2);
+  (5, 'Strawberry Chocolate', 'strawberry-chocolate', 'Strawberry and chocolate, layered.',                  75.00, 'assets/img/products/strawberry-chocolate.webp', 1, 1),
+  (5, 'OuR Barista Drink',    'our-barista-drink',    'Whatever the barista is proud of today.',             99.00, 'assets/img/products/our-barista-drink.webp',    1, 2);
 
 -- ---------------------------------------------------------------------------
 -- Customisation groups, as described in the Scope: sugar level and add-ons

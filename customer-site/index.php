@@ -81,7 +81,7 @@ customer_head('', 'Order ahead from Our Coffee Shop in Mandaluyong City and get 
 
     <div class="hero-art" aria-hidden="true">
       <div class="hero-card hero-card-main">
-        <img src="<?= e(asset('img/products/salted-caramel.svg')) ?>" alt="" width="240" height="240">
+        <img src="<?= e(asset('img/products/salted-caramel.webp')) ?>" alt="" width="240" height="240">
       </div>
       <div class="hero-card hero-card-float hero-card-a">
         <?= icon('message', 'icon icon-lg accent-text') ?>
