@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/partials/layout.php';
 require_once dirname(__DIR__) . '/shared/uploads.php';
+require_once dirname(__DIR__) . '/shared/menu-collections.php';
 
 start_session();
 send_security_headers();
@@ -58,6 +59,22 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     $action = post_string('action');
     $adminId = (int) $admin['id'];
+
+    // Serialize menu writes so simultaneous requests cannot each remove the
+    // final visible drink after inspecting the same old menu.
+    if ((int) db_value('SELECT GET_LOCK(?, 5)', ['coffee_menu_collections']) !== 1) {
+        flash('error', 'The menu is being updated. Please try again.');
+        redirect('menu.php');
+    }
+    register_shutdown_function(static function (): void {
+        try { db_value('SELECT RELEASE_LOCK(?)', ['coffee_menu_collections']); } catch (Throwable $e) { error_log('Could not release menu update lock.'); }
+    });
+    $collectionError = menu_collection_mutation_error($action, $_POST);
+    if ($collectionError !== null) {
+        flash('error', $collectionError);
+        redirect('menu.php');
+    }
+
 
     if ($action === 'category_save') {
         $id          = (int) ($_POST['id'] ?? 0);
@@ -438,6 +455,9 @@ $categories = db_all(
      FROM categories c ORDER BY c.name ASC'
 );
 
+$bestCollection = menu_best_sellers();
+$bestIds = array_map('intval', array_column($bestCollection['products'], 'id'));
+
 // --- Filters ---------------------------------------------------------------
 $categoryFilter = get_int('category');
 $search         = get_string('q');
@@ -446,7 +466,10 @@ $stateFilter    = get_string('state');   // '', 'on', 'off', 'featured'
 $productParams = [];
 $conditions    = [];
 
-if ($categoryFilter > 0) {
+if ($categoryFilter === BEST_SELLERS_CATEGORY_ID) {
+    $conditions[] = $bestIds === [] ? '1 = 0' : 'p.id IN (' . implode(',', array_fill(0, count($bestIds), '?')) . ')';
+    array_push($productParams, ...$bestIds);
+} elseif ($categoryFilter > 0) {
     $conditions[]    = 'p.category_id = ?';
     $productParams[] = $categoryFilter;
 }
@@ -490,7 +513,7 @@ $products = db_all(
 
 /** The current filters, for building links that keep them. */
 $filterQuery = array_filter([
-    'category' => $categoryFilter > 0 ? $categoryFilter : null,
+    'category' => $categoryFilter !== 0 ? $categoryFilter : null,
     'q'        => $search !== '' ? $search : null,
     'state'    => $stateFilter !== '' ? $stateFilter : null,
 ]);
@@ -591,6 +614,12 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
       <!-- A list rather than a table. Six columns will not fit a sidebar this
            narrow, and squeezing them only cut the actions off the edge. -->
       <ul class="cat-list">
+        <li class="cat-item protected-collection<?= $categoryFilter === BEST_SELLERS_CATEGORY_ID ? ' is-filtered' : '' ?>" data-protected-collection>
+          <div class="cat-top"><span class="cat-name"><span aria-hidden="true">&#9733;</span> Best Sellers</span><span class="badge badge-ready"><?= admin_icon('icon-lock', 'icon-xs') ?> Protected</span></div>
+          <p class="cat-desc">Always visible. The name cannot be edited and the collection cannot be deleted.</p>
+          <p class="cat-desc"><?= $bestCollection['fallback'] ? 'No completed sales in the last 30 days. A shop pick keeps this collection ready.' : 'Top available drinks by quantity sold in completed orders over the last 30 days.' ?></p>
+          <div class="cat-foot"><a href="<?= e(admin_url('menu.php')) ?>?category=<?= BEST_SELLERS_CATEGORY_ID ?>"><?= count($bestIds) ?> drink<?= count($bestIds) === 1 ? '' : 's' ?> &middot; View drinks</a></div>
+        </li>
         <?php foreach ($categories as $category): ?>
           <li class="cat-item<?= (int) $category['id'] === $categoryFilter ? ' is-filtered' : '' ?>">
             <div class="cat-top">
@@ -861,6 +890,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
       <div class="filter-field">
         <label class="visually-hidden" for="filter_category">Category</label>
         <select class="select" id="filter_category" name="category">
+          <option value="<?= BEST_SELLERS_CATEGORY_ID ?>"<?= $categoryFilter === BEST_SELLERS_CATEGORY_ID ? ' selected' : '' ?>>&#9733; Best Sellers</option>
           <option value="">All categories</option>
           <?php foreach ($categories as $category): ?>
             <option value="<?= (int) $category['id'] ?>"
@@ -941,6 +971,7 @@ admin_header('Menu', count($categories) . ' categories, ' . $totalProducts . ' i
                 </td>
                 <td>
                   <span class="bold"><?= e((string) $product['name']) ?></span>
+                  <?php if (in_array((int) $product['id'], $bestIds, true)): ?><span class="badge badge-pending"><?= $bestCollection['fallback'] ? 'Shop pick' : '&#9733; Best seller' ?></span><?php endif; ?>
                   <?php if (!empty($product['description'])): ?>
                     <br><span class="subtle tiny menu-item-desc"><?= e((string) $product['description']) ?></span>
                   <?php endif; ?>

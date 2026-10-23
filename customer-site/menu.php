@@ -9,7 +9,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/partials/layout.php';
-require_once __DIR__ . '/../shared/reporting.php';
+require_once __DIR__ . '/../shared/menu-collections.php';
 
 $closed = shop_closed_reason();
 $search = get_string('q');
@@ -34,12 +34,12 @@ $products = db_all(
 );
 
 // Best Sellers is a collection, so drinks retain their ordinary category.
-$bestRows = best_selling_products(date('Y-m-d', strtotime('-29 days')), date('Y-m-d'), 5);
-$bestIds = array_map('intval', array_column($bestRows, 'product_id'));
+$bestCollection = menu_best_sellers();
+$bestIds = array_map('intval', array_column($bestCollection['products'], 'id'));
 $byId = array_column($products, null, 'id');
 $bestProducts = [];
 foreach ($bestIds as $id) {
-    if (isset($byId[$id]) && (int) $byId[$id]['is_available'] === 1) $bestProducts[] = $byId[$id];
+    if (isset($byId[$id])) $bestProducts[] = $byId[$id];
 }
 
 // Group by category for rendering.
@@ -122,7 +122,7 @@ customer_head(
               </div>
 
               <?php if ($group['category']['slug'] === 'best-sellers'): ?>
-                <p class="small muted">Our top 5 by items sold in completed orders over the last 30 days.</p>
+                <p class="small muted"><?= $bestCollection['fallback'] ? 'A shop pick to try. Sales rankings will appear after completed orders.' : 'Our top 5 available drinks by items sold in completed orders over the last 30 days.' ?></p>
                 <?php if ($bestProducts === []): ?>
                   <p class="small muted"><?= $search !== '' ? 'No best sellers match your search.' : 'Our best sellers will appear here after completed sales.' ?></p>
                 <?php endif; ?>
@@ -148,7 +148,7 @@ customer_head(
 
                     <div class="product-body">
                       <?php if (in_array((int) $product['id'], $bestIds, true)): ?>
-                        <span class="best-seller-badge"><span aria-hidden="true">&#9733;</span> Best seller</span>
+                        <span class="best-seller-badge"><span aria-hidden="true">&#9733;</span> <?= $bestCollection['fallback'] ? 'Shop pick' : 'Best seller' ?></span>
                       <?php endif; ?>
                       <p class="product-category"><?= e($product['category_name']) ?></p>
                       <h3 class="product-name">

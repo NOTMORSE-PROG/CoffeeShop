@@ -163,12 +163,22 @@ under Settings.
 
 ## Managing the menu
 
-**Best Sellers.** The customer menu includes a Best Sellers collection and star badges for
-the top five products by quantity in completed orders over the last 30 days. Drinks retain
-their usual categories. The owner dashboard shows sales analytics, a daily sales table,
-and best sellers for the selected date range. Sales count completed orders by completion
+**Best Sellers.** The customer and owner menus share a protected Best Sellers collection.
+Its name and visibility are fixed, and it cannot be deleted. It shows up to five available
+drinks by quantity in completed orders over the last 30 days. Before there are recent sales,
+one available drink appears as a clearly labelled shop pick. Drinks retain their usual
+categories. The menu refuses changes that would hide or remove the last available drink.
+
+**Dashboard.** Orders open first, with separate Cash and GCash / Maya columns. The Orders
+page uses the same columns for staff and owners. Counts refer to the current page; filters
+and pagination apply to both columns. Dashboard status actions and live refresh retain
+the selected filters. Sales & Best Sellers opens a separate dashboard view, defaulting to
+today in the shop timezone; date controls allow other periods. Sales count completed orders by completion
 date in the shop timezone; pending and cancelled orders are excluded. Sales are order totals,
 including delivery fees, and are separate from manual payment confirmation.
+
+Run `php tests/menu-collections.php` against a local dry-run database to check the protected
+collection and today's date default. The database fixtures roll back after the checks.
 
 **Pictures.** Edit an item and upload a JPG, PNG, GIF or WebP, up to 2 MB. Square pictures look
 best. You see a preview before it is sent, and there is a tick to remove the current one.
