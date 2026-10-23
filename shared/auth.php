@@ -252,7 +252,7 @@ function current_admin(): ?array
 /** Whether the signed-in user is the owner. */
 function is_owner(): bool
 {
-    return ($_SESSION['admin_role'] ?? '') === 'owner';
+    return (current_admin()['role'] ?? '') === 'owner';
 }
 
 /**
@@ -265,6 +265,11 @@ function require_login(string $loginUrl = 'login.php'): void
         $_SESSION['intended_url'] = $_SERVER['REQUEST_URI'] ?? null;
         redirect($loginUrl);
     }
+
+    // Read current privileges on every request, including API requests.
+    $admin = current_admin();
+    $_SESSION['admin_role'] = $admin['role'];
+    $_SESSION['must_change_password'] = (int) $admin['must_change_password'] === 1;
 
     $onPasswordPage = basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === 'change-password.php';
 

@@ -198,7 +198,7 @@ records whoever is signed in.
 | Role | Can reach |
 |---|---|
 | Owner | Everything, including Settings and Accounts |
-| Staff | Everything except Settings and Accounts |
+| Staff | Orders and order details, plus their own password change and sign-out |
 
 A few things are enforced rather than left to care:
 

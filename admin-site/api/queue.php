@@ -12,4 +12,8 @@ start_session();
 send_security_headers();
 require_login('../login.php');
 
+if (!is_owner()) {
+    json_response(['ok' => false, 'error' => 'You do not have permission to open the dashboard.'], 403);
+}
+
 json_response(queue_payload());

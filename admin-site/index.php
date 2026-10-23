@@ -14,6 +14,10 @@ start_session();
 send_security_headers();
 require_login();
 
+if (!is_owner()) {
+    redirect('orders.php');
+}
+
 $admin = current_admin();
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {

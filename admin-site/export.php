@@ -9,7 +9,7 @@ require_once __DIR__ . '/partials/layout.php';
 
 start_session();
 send_security_headers();
-require_login();
+require_owner();
 
 $from = get_string('from');
 $to   = get_string('to');

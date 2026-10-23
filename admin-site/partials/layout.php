@@ -156,6 +156,9 @@ function time_ago(string $timestamp): string
 /** The nav, with Settings only for the owner. */
 function admin_nav_items(): array
 {
+    if (!is_owner()) {
+        return [['page' => 'orders.php', 'label' => 'Orders', 'icon' => 'icon-receipt']];
+    }
     $items = [
         ['page' => 'index.php',     'label' => 'Dashboard',   'icon' => 'icon-dashboard'],
         ['page' => 'orders.php',    'label' => 'Orders',      'icon' => 'icon-receipt'],
@@ -331,7 +334,7 @@ function admin_header(string $heading, string $subtitle = ''): void
 <div class="admin-shell">
 
   <aside class="admin-sidebar" id="admin-sidebar">
-    <a class="admin-brand" href="<?= e(admin_url('index.php')) ?>">
+    <a class="admin-brand" href="<?= e(admin_url(is_owner() ? 'index.php' : 'orders.php')) ?>">
       <img src="<?= e(admin_asset('img/logo-mark.svg')) ?>" alt="" width="36" height="36">
       <span>
         <span class="admin-brand-name"><?= e((string) setting('shop_name', APP_NAME)) ?></span>
