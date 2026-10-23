@@ -151,7 +151,7 @@ owner sets under Settings, with one free city.
 
 ## Payments
 
-- **Cash** &ndash; paid at the counter on pickup, or on delivery.
+- **Cash on delivery** &ndash; available for delivery orders only. Self pickup requires QR payment first.
 - **GCash** &ndash; the customer scans the shop's QR code and sends the payment. The admin
   confirms it manually from the order screen. There is no merchant API and no automatic
   reconciliation, which is what a single-owner shop can realistically get approved.

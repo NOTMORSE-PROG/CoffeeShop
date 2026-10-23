@@ -154,9 +154,13 @@ function place_order(array $cart, array $customer): array
     $requested = (string) ($customer['payment_method'] ?? 'cash');
     $wallets   = shop_wallets();
 
-    // Anything that is not a wallet we know about is cash, so a tampered form
-    // cannot store a method the rest of the system has never heard of.
-    $paymentMethod = isset($wallets[$requested]) ? $requested : 'cash';
+    if ($requested !== 'cash' && !isset($wallets[$requested])) {
+        return ['ok' => false, 'errors' => ['Please choose an available payment method.']];
+    }
+    $paymentMethod = $requested;
+    if ($orderType === 'pickup' && $paymentMethod === 'cash') {
+        return ['ok' => false, 'errors' => ['Self pickup requires QR payment before collection. Cash is available for delivery only.']];
+    }
 
     if ($paymentMethod !== 'cash' && !setting_bool($wallets[$paymentMethod]['enabled_key'], false)) {
         return [
@@ -165,7 +169,7 @@ function place_order(array $cart, array $customer): array
         ];
     }
     if ($paymentMethod === 'cash' && !setting_bool('payment_cash_enabled', true)) {
-        return ['ok' => false, 'errors' => ['Payment at the counter is not available at the moment.']];
+        return ['ok' => false, 'errors' => ['Cash on delivery is not available at the moment.']];
     }
 
     $phone = normalize_ph_mobile((string) ($customer['phone'] ?? ''));

@@ -44,7 +44,7 @@ $form = [
     'order_type'           => 'pickup',
     'delivery_address'     => '',
     'delivery_city'        => $freeCity !== '' ? $freeCity : '',
-    'payment_method'       => $cashOn ? 'cash' : (string) (array_key_first($wallets) ?? 'cash'),
+    'payment_method'       => (string) (array_key_first($wallets) ?? ''),
     'special_instructions' => '',
 ];
 
@@ -57,7 +57,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $form['delivery_address']     = clean_text(post_string('delivery_address'), 255);
     $form['delivery_city']        = clean_text(post_string('delivery_city'), 80);
     $posted = post_string('payment_method', 'cash');
-    $form['payment_method'] = isset($wallets[$posted]) ? $posted : 'cash';
+    $form['payment_method'] = $posted;
     $form['special_instructions'] = clean_text(post_string('special_instructions'), 400);
 
     if (!valid_person_name($form['name'])) {
@@ -86,10 +86,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
 
     if ($form['payment_method'] !== 'cash' && !isset($wallets[$form['payment_method']])) {
-        $errors['payment_method'] = 'GCash is not available at the moment.';
+        $errors['payment_method'] = 'Please choose an available QR payment method.';
     }
     if ($form['payment_method'] === 'cash' && !$cashOn) {
-        $errors['payment_method'] = 'Paying at the counter is not available at the moment.';
+        $errors['payment_method'] = 'Cash on delivery is not available at the moment.';
+    }
+    if ($form['order_type'] === 'pickup' && $form['payment_method'] === 'cash') {
+        $errors['payment_method'] = 'Self pickup requires QR payment. Cash is available for delivery only.';
     }
 
     if ($errors === []) {
@@ -296,14 +299,20 @@ customer_head('Checkout', 'Confirm your details and place your order.');
           <fieldset class="fieldset">
             <legend>Payment</legend>
 
+            <p class="hint">For self pickup, scan a shop QR and pay first. The shop confirms your payment manually. Cash is available for delivery only.</p>
+            <?php if ($wallets === []): ?>
+              <p class="alert alert-warning">QR payment is currently unavailable. Please contact the shop for self pickup.</p>
+            <?php endif; ?>
+
             <div class="choice-group choice-group-2">
               <?php if ($cashOn): ?>
-                <label class="choice">
+                <label class="choice" data-cash-choice <?= $form['order_type'] === 'delivery' ? '' : 'hidden' ?>>
                   <input type="radio" name="payment_method" value="cash"
-                         <?= $form['payment_method'] === 'cash' ? 'checked' : '' ?>>
+                         <?= $form['payment_method'] === 'cash' && $form['order_type'] === 'delivery' ? 'checked' : '' ?>
+                         <?= $form['order_type'] === 'delivery' ? '' : 'disabled' ?>>
                   <span>
-                    <span class="choice-title"><?= icon('cash') ?> Cash</span>
-                    <span class="choice-note">Pay when you collect or receive your order.</span>
+                    <span class="choice-title"><?= icon('cash') ?> Cash on delivery</span>
+                    <span class="choice-note">Pay when your delivery arrives.</span>
                   </span>
                 </label>
               <?php endif; ?>

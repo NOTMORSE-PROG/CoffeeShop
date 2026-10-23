@@ -110,6 +110,19 @@
       var picked = checkout.querySelector('input[name="order_type"]:checked');
       var isDelivery = picked && picked.value === 'delivery';
 
+      var cashChoice = checkout.querySelector('[data-cash-choice]');
+      var cashInput = checkout.querySelector('input[name="payment_method"][value="cash"]');
+      if (cashChoice) cashChoice.hidden = !isDelivery;
+      if (cashInput) {
+        cashInput.disabled = !isDelivery;
+        if (!isDelivery && cashInput.checked) cashInput.checked = false;
+      }
+      if (!checkout.querySelector('input[name="payment_method"]:checked')) {
+        var firstPayment = checkout.querySelector('input[name="payment_method"]:not(:disabled)');
+        if (firstPayment) firstPayment.checked = true;
+      }
+      syncPayment();
+
       if (deliveryFields) {
         if (isDelivery) {
           deliveryFields.removeAttribute('hidden');

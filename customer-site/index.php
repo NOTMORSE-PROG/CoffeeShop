@@ -75,7 +75,7 @@ customer_head('', 'Order ahead from Our Coffee Shop in Mandaluyong City and get 
       <ul class="hero-points">
         <li><?= icon('message') ?> SMS updates at every stage</li>
         <li><?= icon('store') ?> Pick up or have it delivered</li>
-        <li><?= icon('wallet') ?> Pay by GCash or at the counter</li>
+        <li><?= icon('wallet') ?> QR payment for pickup, or cash on delivery</li>
       </ul>
     </div>
 
@@ -180,7 +180,7 @@ customer_head('', 'Order ahead from Our Coffee Shop in Mandaluyong City and get 
       <li class="how-step">
         <span class="how-num">3</span>
         <h3>Pay your way</h3>
-        <p class="small muted">Scan the GCash QR, or simply pay at the counter when you collect.</p>
+        <p class="small muted">Scan a shop QR and pay before pickup, or choose cash on delivery.</p>
       </li>
       <li class="how-step">
         <span class="how-num">4</span>
