@@ -189,7 +189,7 @@ function payment_method_label(string $method): string
         return $wallets[$method]['label'];
     }
 
-    return $method === 'cash' ? 'Cash at the counter' : ucfirst($method);
+    return $method === 'cash' ? 'Cash' : ucfirst($method);
 }
 
 /**

@@ -8,7 +8,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/partials/queue.php';
+require_once __DIR__ . '/partials/order-board.php';
 
 start_session();
 send_security_headers();
@@ -19,6 +19,7 @@ if (!is_owner()) {
 }
 
 $admin = current_admin();
+$dashboardView = get_string('view') === 'sales' ? 'sales' : 'orders';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_post_with_csrf();
@@ -55,11 +56,20 @@ $filters = $queueData['filters'];
 $queueQuery = http_build_query(array_merge($filters, ['page' => $queueData['page']]));
 $queueAction = admin_url('index.php') . '?' . $queueQuery;
 
-admin_head('Dashboard', ['scripts' => [admin_asset('vendor/chart.min.js')]]);
+admin_head('Dashboard', ['bodyClass' => 'dashboard-page', 'scripts' => $dashboardView === 'sales' ? [admin_asset('vendor/chart.min.js')] : []]);
 admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 18 ? 'afternoon' : 'evening'))
     . ', ' . (string) $admin['full_name'] . '.');
 ?>
 
+<nav class="dashboard-views" aria-label="Dashboard views">
+  <a href="<?= e(admin_url('index.php')) ?>"<?= $dashboardView === 'orders' ? ' aria-current="page"' : '' ?>><?= admin_icon('icon-receipt', 'icon-sm') ?> Orders</a>
+  <a href="<?= e(admin_url('index.php')) ?>?view=sales"<?= $dashboardView === 'sales' ? ' aria-current="page"' : '' ?>><?= admin_icon('icon-chart', 'icon-sm') ?> Sales &amp; Best Sellers</a>
+</nav>
+<?php if ($dashboardView === 'sales'): ?>
+<section id="dashboard-analytics" class="dashboard-analytics" aria-label="Sales analytics">
+  <?php require __DIR__ . '/partials/analytics.php'; ?>
+</section>
+<?php else: ?>
 <section class="stat-grid" aria-label="Today at a glance">
   <div class="card stat" data-stat="today_orders">
     <p class="stat-label">Orders today</p>
@@ -86,11 +96,8 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
   </div>
 </section>
 
-<section id="dashboard-analytics" aria-label="Sales analytics">
-  <h2>Sales analytics</h2>
-  <?php require __DIR__ . '/partials/analytics.php'; ?>
-</section>
-
+<details class="card dashboard-filters"<?= array_filter($filters, static fn ($value, $key) => !in_array($key, ['status','sort'], true) && $value !== '', ARRAY_FILTER_USE_BOTH) !== [] ? ' open' : '' ?>>
+<summary>Filter orders <span class="small subtle">Search, fulfilment and payment</span></summary>
 <form class="card filter-bar" method="get" action="<?= e(admin_url('index.php')) ?>" data-no-guard>
   <div class="filter-grid">
     <div class="field"><label class="label" for="queue-search">Search orders</label>
@@ -121,6 +128,7 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
     </a>
   <?php endforeach; ?>
 </nav>
+</details>
 
 <section class="card queue-card" id="queue-live" data-live-region>
   <div class="card-header">
@@ -129,56 +137,7 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
   </div>
 
   <div class="card-body">
-    <ul class="queue" id="order-queue"
-        data-queue-url="<?= e(admin_url('api/queue.php') . '?' . $queueQuery) ?>"
-        data-queue-action="<?= e($queueAction) ?>"
-        data-csrf="<?= e(csrf_token()) ?>">
-      <?php foreach ($queue as $order): ?>
-        <?php $row = queue_row($order); ?>
-        <li class="queue-item" data-order-id="<?= (int) $row['id'] ?>">
-          <div class="queue-body">
-            <div class="queue-head">
-              <a class="queue-ref" href="<?= e($row['view_url']) ?>"><?= e($row['order_ref']) ?></a>
-              <?= status_badge($row['status'], $row['order_type']) ?>
-              <?= payment_badge($row['payment_status']) ?>
-            </div>
-            <p class="queue-customer"><?= e($row['customer_name']) ?> &middot; <?= e($row['customer_phone']) ?></p>
-            <p class="queue-meta">
-              <?= e($row['type_label']) ?> &middot;
-              <?= (int) $row['item_count'] ?> item<?= $row['item_count'] === 1 ? '' : 's' ?> &middot;
-              <span class="tabular"><?= e($row['total_display']) ?></span> &middot;
-              <?= e($row['placed_at']) ?> (<?= e($row['waiting']) ?>)
-            </p>
-          </div>
-
-          <div class="queue-actions">
-            <?php foreach ($row['next_statuses'] as $next): ?>
-              <form method="post" action="<?= e($queueAction) ?>" data-no-guard
-                    data-live-form="#queue-live">
-                <?= csrf_field() ?>
-                <input type="hidden" name="order_id" value="<?= (int) $row['id'] ?>">
-                <input type="hidden" name="status" value="<?= e($next['status']) ?>">
-                <button type="submit"
-                        class="btn btn-sm<?= $next['status'] === 'cancelled' ? ' btn-danger' : '' ?>"
-                        <?php if ($next['status'] === 'cancelled'): ?>
-                          data-confirm="Cancel order <?= e($row['order_ref']) ?>?"
-                        <?php endif; ?>>
-                  <?= e($next['label']) ?>
-                </button>
-              </form>
-            <?php endforeach; ?>
-
-            <a class="btn btn-sm btn-secondary" href="<?= e($row['view_url']) ?>">Open</a>
-          </div>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-
-    <div class="empty" data-queue-empty<?= $queue === [] ? '' : ' hidden' ?>>
-      <?= admin_icon('icon-check-circle', 'empty-icon') ?>
-      <h3>No matching orders</h3>
-      <p class="mb-0">Try another category or clear the filters. New matches appear automatically.</p>
-    </div>
+    <?php render_order_board($queue, ['url' => admin_url('api/queue.php') . '?' . $queueQuery, 'action' => $queueAction]); ?>
   </div>
 </section>
 
@@ -186,4 +145,5 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
   <p class="small subtle" data-queue-total><?= (int) $queueData['total'] ?> matching orders | Page <?= (int) $queueData['page'] ?> of <?= (int) $queueData['pages'] ?></p>
   <div data-queue-pages><?php admin_pagination($queueData['page'], $queueData['pages'], $filters, 'index.php'); ?></div>
 </div>
+<?php endif; ?>
 <?php admin_footer(); ?>

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/partials/layout.php';
+require_once __DIR__ . '/partials/order-board.php';
 
 start_session();
 send_security_headers();
@@ -174,65 +174,7 @@ admin_header('Orders', $totalOrders === 1 ? '1 order found.' : number_format($to
   </div>
 </form>
 
-<?php if ($orders === []): ?>
-  <div class="card">
-    <div class="empty">
-      <?= admin_icon('icon-receipt', 'empty-icon') ?>
-      <h3>No orders match</h3>
-      <p class="mb-0">Try widening the dates or clearing the search.</p>
-    </div>
-  </div>
-<?php else: ?>
-  <div class="table-wrap">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Reference</th>
-          <th scope="col">Placed</th>
-          <th scope="col">Customer</th>
-          <th scope="col">Type</th>
-          <th scope="col">Items</th>
-          <th scope="col">Total</th>
-          <th scope="col">Payment</th>
-          <th scope="col">Status</th>
-          <th scope="col"><span class="visually-hidden">Actions</span></th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($orders as $order): ?>
-          <tr>
-            <td>
-              <a class="bold" href="<?= e(admin_url('order-view.php')) ?>?id=<?= (int) $order['id'] ?>">
-                <?= e((string) $order['order_ref']) ?>
-              </a>
-            </td>
-            <td class="nowrap small">
-              <?= e(date('j M Y', (int) strtotime((string) $order['placed_at']))) ?><br>
-              <span class="subtle"><?= e(date('g:i A', (int) strtotime((string) $order['placed_at']))) ?></span>
-            </td>
-            <td>
-              <?= e((string) $order['customer_name']) ?><br>
-              <span class="subtle small"><?= e(format_ph_mobile((string) $order['customer_phone'])) ?></span>
-            </td>
-            <td class="small"><?= $order['order_type'] === 'delivery' ? 'Delivery' : 'Pickup' ?></td>
-            <td class="tabular"><?= (int) $order['item_count'] ?></td>
-            <td class="tabular nowrap"><?= peso($order['total']) ?></td>
-            <td>
-              <?= payment_badge((string) $order['payment_status']) ?>
-              <span class="tiny subtle"><?= e(payment_method_label((string) $order['payment_method'])) ?></span>
-            </td>
-            <td><?= status_badge((string) $order['status'], (string) $order['order_type']) ?></td>
-            <td class="right">
-              <a class="btn btn-sm btn-secondary"
-                 href="<?= e(admin_url('order-view.php')) ?>?id=<?= (int) $order['id'] ?>">Open</a>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
-
-  <?php admin_pagination($page, $totalPages, $queryForPager, 'orders.php'); ?>
-<?php endif; ?>
+<?php render_order_board($orders); ?>
+<?php admin_pagination($page, $totalPages, $queryForPager, 'orders.php'); ?>
 
 <?php admin_footer(); ?>

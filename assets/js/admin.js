@@ -141,6 +141,7 @@
     function buildItem(order) {
       var item = el('li', 'queue-item');
       item.setAttribute('data-order-id', String(order.id));
+      item.setAttribute('data-payment-method', order.payment_method);
 
       var body = el('div', 'queue-body');
       var head = el('div', 'queue-head');
@@ -159,7 +160,7 @@
       body.appendChild(head);
       body.appendChild(el('p', 'queue-customer', order.customer_name + ' · ' + order.customer_phone));
       body.appendChild(el('p', 'queue-meta',
-        order.type_label
+        (order.payment_label || order.payment_method) + ' · ' + order.type_label
         + ' · ' + order.item_count + (order.item_count === 1 ? ' item' : ' items')
         + ' · ' + order.total_display
         + ' · ' + order.placed_at + ' (' + order.waiting + ')'
@@ -189,7 +190,7 @@
         actions.appendChild(form);
       });
 
-      var open = el('a', 'btn btn-sm btn-secondary', 'Open');
+      var open = el('a', 'btn btn-sm btn-secondary', 'Open order');
       open.href = order.view_url;
       actions.appendChild(open);
 
@@ -261,9 +262,17 @@
       if (signature !== lastSignature) {
         lastSignature = signature;
 
-        list.textContent = '';
-        data.orders.forEach(function (order) {
-          list.appendChild(buildItem(order));
+        ['cash', 'wallet'].forEach(function (key) {
+          var lane = list.querySelector('[data-payment-lane="' + key + '"]');
+          if (!lane) return;
+          var laneList = lane.querySelector('[data-payment-list]');
+          var orders = data.orders.filter(function (order) {
+            return (order.payment_method === 'cash' ? 'cash' : 'wallet') === key;
+          });
+          laneList.textContent = '';
+          orders.forEach(function (order) { laneList.appendChild(buildItem(order)); });
+          lane.querySelector('[data-lane-count]').textContent = orders.length + ' on this page';
+          lane.querySelector('[data-lane-empty]').hidden = orders.length > 0;
         });
 
         if (emptyState) emptyState.hidden = data.orders.length > 0;

@@ -10,7 +10,7 @@ function report_date_range(string $from, string $to): array
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
         return $date && $date->format('Y-m-d') === $value ? $date : null;
     };
-    $start = $parse($from) ?? $today->modify('-13 days');
+    $start = $parse($from) ?? $today;
     $end = $parse($to) ?? $today;
     if ($start > $end) [$start, $end] = [$end, $start];
     $end = min($end, $today);

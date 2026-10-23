@@ -6,8 +6,7 @@ if (!function_exists('is_owner') || !is_owner()) {
 }
 require_once __DIR__ . '/../../shared/reporting.php';
 // --- Date range ------------------------------------------------------------
-// Defaults to the last fourteen days, which is the window the dashboard
-// conversation kept coming back to.
+// Sales open on the current shop day; other periods are selected explicitly.
 
 $today = date('Y-m-d');
 [$from, $to] = report_date_range(get_string('from'), get_string('to'));
@@ -146,7 +145,11 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
 
 ?>
 
-<form class="card filter-bar" method="get" action="<?= e(admin_url('index.php')) ?>" data-no-guard>
+<header class="analytics-heading"><div><p class="eyebrow">Sales overview</p><h2><?= $from === $today && $to === $today ? "Today's sales" : 'Sales for selected dates' ?></h2><p class="small subtle"><?= e(date('D, j M Y', strtotime($from))) ?><?= $from !== $to ? ' to ' . e(date('D, j M Y', strtotime($to))) : '' ?> &middot; Completed orders only</p></div></header>
+<details class="card analytics-date-control"<?= $from !== $today || $to !== $today ? ' open' : '' ?>>
+<summary>Change dates <span class="small subtle"><?= e($from === $today && $to === $today ? 'Today' : $from . ' to ' . $to) ?></span></summary>
+<form class="filter-bar analytics-range" method="get" action="<?= e(admin_url('index.php')) ?>" data-no-guard>
+  <input type="hidden" name="view" value="sales">
   <div class="filter-grid filter-grid-sm">
     <div class="field">
       <label class="label" for="from">From</label>
@@ -161,13 +164,14 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
 
   <div class="filter-actions">
     <button type="submit" class="btn btn-sm">Apply range</button>
-    <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('index.php')) ?>">Last 14 days</a>
+    <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('index.php')) ?>?view=sales">Today</a>
     <span class="grow"></span>
     <a class="btn btn-sm btn-secondary" href="<?= e(admin_url('export.php')) ?>?<?= e($exportQuery) ?>">
-      <?= admin_icon('icon-receipt', 'icon-sm') ?> Download completed sales CSV
+      <?= admin_icon('icon-receipt', 'icon-sm') ?> Export sales CSV
     </a>
   </div>
 </form>
+</details>
 
 <section class="stat-grid" aria-label="Totals for the selected range">
   <div class="card stat">
@@ -189,7 +193,7 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
   </div>
 
   <div class="card stat">
-    <p class="stat-label">Completed sales</p>
+    <p class="stat-label">Completed orders</p>
     <p class="stat-value tabular"><?= number_format($salesCount) ?></p>
     <p class="stat-note">Completed in this date range</p>
   </div>
@@ -205,16 +209,16 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
 <div class="tabs" data-tabs>
   <div class="tablist" role="tablist" aria-label="Analytics sections">
     <button type="button" class="tab" role="tab" id="tab-sales-tab" aria-controls="tab-sales"
-            aria-selected="true" tabindex="0">Sales &amp; best sellers</button>
+            aria-selected="true" tabindex="0">Sales overview</button>
     <button type="button" class="tab" role="tab" id="tab-orders-tab" aria-controls="tab-orders"
-            aria-selected="false" tabindex="-1">Orders</button>
+            aria-selected="false" tabindex="-1">Order trends</button>
     <button type="button" class="tab" role="tab" id="tab-sms-tab" aria-controls="tab-sms"
-            aria-selected="false" tabindex="-1">Texts</button>
+            aria-selected="false" tabindex="-1">SMS activity</button>
   </div>
 
   <div class="tabpanel chart-grid" role="tabpanel" id="tab-sales" aria-labelledby="tab-sales-tab">
 
-  <section class="card chart-wide">
+  <section class="card">
     <div class="card-header">
       <h2>Sales per day</h2>
       <?php if ($orderCount > 0): ?>
@@ -233,7 +237,7 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
     </div>
   </section>
 
-  <section class="card chart-wide">
+  <section class="card">
     <div class="card-header">
       <h2><span aria-hidden="true">&#9733;</span> Best sellers</h2>
       <?php if ($topValues !== []): ?>
@@ -250,8 +254,8 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
       <?php endif; ?>
     </div>
   </section>
-  <section class="card chart-wide">
-    <div class="card-header"><h2>Daily sales</h2><span class="small subtle">Completed orders, by completion date</span></div>
+  <details class="card chart-wide daily-sales-details">
+    <summary>Sales breakdown <span class="small subtle"><?= count($salesDays) ?> day<?= count($salesDays) === 1 ? '' : 's' ?> &middot; <?= peso($revenue) ?> total</span></summary>
     <div class="table-wrap"><table class="table">
       <thead><tr><th scope="col">Date</th><th scope="col">Completed orders</th><th scope="col">Sales</th></tr></thead>
       <tbody><?php foreach (array_reverse($salesDays) as $day): ?>
@@ -259,7 +263,7 @@ $exportQuery = http_build_query(['from' => $from, 'to' => $to]);
       <?php endforeach; ?></tbody>
       <tfoot><tr><th scope="row">Total</th><td><?= (int) $salesCount ?></td><td class="tabular"><?= peso($revenue) ?></td></tr></tfoot>
     </table></div>
-  </section>
+  </details>
 
   </div>
 
