@@ -133,6 +133,8 @@
 
       // Only require an address when it is actually being asked for.
       if (addressInput) addressInput.required = Boolean(isDelivery);
+      var deliveryCity = checkout.querySelector('[name="delivery_city"]');
+      if (deliveryCity) deliveryCity.required = Boolean(isDelivery);
     };
 
     var syncPayment = function () {
@@ -161,16 +163,16 @@
       var picked = checkout.querySelector('input[name="order_type"]:checked');
       var isDelivery = picked && picked.value === 'delivery';
       var fee = 0;
+      var city = ((cityInput && cityInput.value) || '').trim().toLowerCase();
 
-      if (isDelivery) {
-        var city = ((cityInput && cityInput.value) || '').trim().toLowerCase();
+      if (isDelivery && city !== '') {
         fee = (freeCity !== '' && city === freeCity) ? 0 : flatFee;
       }
 
       if (feeOut) {
         feeOut.textContent = !isDelivery
           ? '—'
-          : (fee <= 0 ? 'Free' : window.OurCoffee.peso(fee));
+          : (city === '' ? 'Choose a city' : (fee <= 0 ? 'Free' : window.OurCoffee.peso(fee)));
       }
 
       if (totalOut) {

@@ -133,14 +133,25 @@ function delivery_fee_for_city(?string $city): float
  * is an order nobody can fulfil, so it should not be selectable and should not
  * survive a tampered form either.
  */
+function parse_delivery_cities(string $raw): array
+{
+    $cities = [];
+    $seen = [];
+    foreach (preg_split('/[\r\n,]+/', $raw) ?: [] as $line) {
+        $city = trim(preg_replace('/\s+/u', ' ', $line) ?? '');
+        $city = preg_replace('/[\x00-\x1F\x7F]/u', '', $city) ?? '';
+        $key = mb_strtolower($city);
+        if ($city !== '' && !isset($seen[$key])) {
+            $cities[] = $city;
+            $seen[$key] = true;
+        }
+    }
+    return $cities;
+}
+
 function delivery_cities(): array
 {
-    $raw = (string) setting('delivery_cities', '');
-
-    $cities = array_values(array_filter(array_map(
-        static fn (string $line): string => trim($line),
-        preg_split('/[\r\n,]+/', $raw) ?: []
-    ), static fn (string $c): bool => $c !== ''));
+    $cities = parse_delivery_cities((string) setting('delivery_cities', ''));
 
     // The free city is always deliverable, even if the owner forgets to list
     // it, because the whole fee rule is written around it.

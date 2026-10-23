@@ -319,6 +319,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             continue;
         }
 
+        if ($key === 'delivery_cities') {
+            $cities = parse_delivery_cities($raw);
+            if (mb_strlen($raw) > 2000 || count($cities) > 50
+                || array_filter($cities, static fn ($city) => mb_strlen($city) > 80) !== []) {
+                $errors[] = 'List up to 50 cities, one per line, with at most 80 characters per city.';
+                continue;
+            }
+            $wanted[$key] = implode("\n", $cities);
+            continue;
+        }
+
         $value = clean_text($raw, 2000);
 
         if ($type === 'time' && $value !== '' && !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $value)) {

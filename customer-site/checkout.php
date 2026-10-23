@@ -43,7 +43,7 @@ $form = [
     'phone'                => '',
     'order_type'           => 'pickup',
     'delivery_address'     => '',
-    'delivery_city'        => $freeCity !== '' ? $freeCity : '',
+    'delivery_city'        => '',
     'payment_method'       => (string) (array_key_first($wallets) ?? ''),
     'special_instructions' => '',
 ];
@@ -250,6 +250,7 @@ customer_head('Checkout', 'Confirm your details and place your order.');
                          cities; typing a fifth only produces an order nobody
                          can fulfil. */ ?>
                 <select class="select" id="delivery_city" name="delivery_city"
+                        <?= $form['order_type'] === 'delivery' ? 'required' : '' ?>
                         <?= isset($errors['delivery_city']) ? 'aria-invalid="true"' : '' ?>>
                   <option value="">Choose a city</option>
                   <?php foreach (delivery_cities() as $city): ?>
@@ -428,6 +429,8 @@ customer_head('Checkout', 'Confirm your details and place your order.');
               <span class="tabular" data-delivery-fee>
                 <?php if ($form['order_type'] !== 'delivery'): ?>
                   &mdash;
+                <?php elseif ($form['delivery_city'] === ''): ?>
+                  Choose a city
                 <?php elseif ($deliveryFee <= 0): ?>
                   Free
                 <?php else: ?>
