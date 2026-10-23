@@ -430,15 +430,19 @@ function change_order_status(int $orderId, string $newStatus, ?int $adminId, ?st
         db_transaction(function () use ($order, $orderId, $current, $newStatus, $adminId, $note) {
             $completedAt = in_array($newStatus, ['completed', 'cancelled'], true) ? date('Y-m-d H:i:s') : null;
 
-            db_query(
-                'UPDATE orders SET status = ?, completed_at = ?, cancel_reason = ? WHERE id = ?',
+            $updated = db_query(
+                'UPDATE orders SET status = ?, completed_at = ?, cancel_reason = ? WHERE id = ? AND status = ?',
                 [
                     $newStatus,
                     $completedAt,
                     $newStatus === 'cancelled' ? $note : $order['cancel_reason'],
                     $orderId,
+                    $current,
                 ]
             );
+            if ($updated->rowCount() !== 1) {
+                throw new DomainException('This order changed in another request. Refresh before trying again.');
+            }
 
             db_query(
                 'INSERT INTO order_status_history (order_id, from_status, to_status, changed_by, note)
@@ -458,6 +462,8 @@ function change_order_status(int $orderId, string $newStatus, ?int $adminId, ?st
                 db_query('UPDATE orders SET stock_deducted = 0 WHERE id = ?', [$orderId]);
             }
         });
+    } catch (DomainException $e) {
+        return ['ok' => false, 'error' => $e->getMessage()];
     } catch (Throwable $e) {
         error_log('Status change failed for order ' . $orderId . ': ' . $e->getMessage());
 

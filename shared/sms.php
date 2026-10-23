@@ -103,6 +103,31 @@ function sms_provider(): string
  */
 function send_order_sms(array $order, string $status, bool $force = false): ?int
 {
+    $orderId = (int) ($order['id'] ?? 0);
+    if ($force || $orderId <= 0) return send_order_sms_once($order, $status, $force);
+
+    // Serialize the notification event across concurrent requests. Explicit
+    // owner-requested resends remain separate, audited actions.
+    $lock = 'coffee_sms_' . $orderId . '_' . $status;
+    $locked = false;
+    try {
+        $locked = (int) db_value('SELECT GET_LOCK(?, 5)', [$lock]) === 1;
+        if (!$locked) return null;
+        $existing = db_value('SELECT id FROM sms_log WHERE order_id = ? AND trigger_status = ? ORDER BY id LIMIT 1', [$orderId, $status]);
+        if ($existing !== null) return (int) $existing;
+        return send_order_sms_once($order, $status, false);
+    } catch (Throwable $e) {
+        error_log('Could not reserve order SMS event: ' . $e->getMessage());
+        return null;
+    } finally {
+        if ($locked) {
+            try { db_value('SELECT RELEASE_LOCK(?)', [$lock]); } catch (Throwable $e) { error_log('Could not release SMS event lock.'); }
+        }
+    }
+}
+
+function send_order_sms_once(array $order, string $status, bool $force = false): ?int
+{
     if (!$force && !sms_enabled_for_status($status)) {
         return sms_log_row($order, $status, sms_message_for($status, $order), 'skipped',
             null, 'Notifications are switched off for this status.');
@@ -230,13 +255,14 @@ function sms_send_via_semaphore(array $order, string $status, string $message, s
  *
  * Claiming is what stops one handset retrying, or two handsets running at
  * once, from sending the same text twice. A claim that is never confirmed
- * goes stale after a timeout and the message returns to the queue.
+ * goes stale after a timeout and needs review. It is never automatically
+ * handed out again: the phone may have sent it and lost its confirmation.
  *
  * @return array<int, array{id: int, to: string, message: string}>
  */
-function sms_claim_batch(string $deviceId): array
+function sms_claim_batch(string $deviceId, ?int $limit = null): array
 {
-    $batch   = max(1, min(20, (int) setting('sms_batch_size', 5)));
+    $batch   = max(1, min(20, $limit ?? (int) setting('sms_batch_size', 5)));
     $timeout = max(30, (int) setting('sms_claim_timeout_seconds', 120));
     $maxTry  = max(1, (int) setting('sms_max_attempts', 3));
 
@@ -246,15 +272,23 @@ function sms_claim_batch(string $deviceId): array
             "UPDATE sms_log
              SET status = 'failed',
                  error_message = 'Expired before the handset collected it'
-             WHERE status = 'queued' AND expires_at IS NOT NULL AND expires_at < NOW()"
+             WHERE status = 'queued' AND claimed_at IS NULL AND expires_at IS NOT NULL AND expires_at < NOW()"
         );
 
-        // And anything handed over too many times without a confirmation.
+        // A lost acknowledgement is ambiguous, not permission to send twice.
+        db_query(
+            "UPDATE sms_log SET status = 'failed',
+             error_message = 'Handset delivery unconfirmed; check phone before resending'
+             WHERE status = 'queued' AND claimed_at IS NOT NULL
+             AND claimed_at < DATE_SUB(NOW(), INTERVAL ? SECOND)", [$timeout]
+        );
+
+        // Legacy unclaimed rows that exhausted their configured attempts.
         db_query(
             "UPDATE sms_log
              SET status = 'failed',
                  error_message = 'Given to the handset too many times without confirmation'
-             WHERE status = 'queued' AND attempts >= ?",
+             WHERE status = 'queued' AND claimed_at IS NULL AND attempts >= ?",
             [$maxTry]
         );
 
@@ -263,11 +297,11 @@ function sms_claim_batch(string $deviceId): array
             "SELECT id, phone, message
              FROM sms_log
              WHERE status = 'queued'
-               AND (claimed_at IS NULL OR claimed_at < DATE_SUB(NOW(), INTERVAL ? SECOND))
+               AND claimed_at IS NULL
              ORDER BY id ASC
              LIMIT " . $batch . "
              FOR UPDATE",
-            [$timeout]
+            []
         );
 
         if ($rows === []) {
@@ -330,38 +364,32 @@ function sms_record_results(array $results, string $deviceId): array
             continue;
         }
 
-        // Only a message still on the queue may be closed off, so a replayed
-        // or malformed report cannot rewrite history that is already settled.
-        $row = db_one(
-            "SELECT id FROM sms_log WHERE id = ? AND status = 'queued' LIMIT 1",
-            [$id]
-        );
-
-        if ($row === null) {
-            $ignored++;
-            continue;
-        }
-
+        // Bind reports to the handset that claimed this row, atomically.
+        // A late acknowledgement may resolve an unconfirmed handoff without
+        // reissuing the message. Repeated reports cannot rewrite a sent row.
+        $eligible = "id = ? AND device_id = ? AND claimed_at IS NOT NULL
+            AND (status = 'queued' OR (status = 'failed'
+            AND error_message = 'Handset delivery unconfirmed; check phone before resending'))";
         if (!empty($result['ok'])) {
-            db_query(
+            $updated = db_query(
                 "UPDATE sms_log
-                 SET status = 'sent', sent_at = NOW(), device_id = ?, error_message = NULL
-                 WHERE id = ?",
-                [mb_substr($deviceId, 0, 64), $id]
+                 SET status = 'sent', sent_at = NOW(), error_message = NULL
+                 WHERE " . $eligible,
+                [$id, mb_substr($deviceId, 0, 64)]
             );
-            $sent++;
+            if ($updated->rowCount() === 1) $sent++; else $ignored++;
         } else {
-            db_query(
+            $updated = db_query(
                 "UPDATE sms_log
-                 SET status = 'failed', device_id = ?, error_message = ?
-                 WHERE id = ?",
+                 SET status = 'failed', error_message = ?
+                 WHERE " . $eligible,
                 [
-                    mb_substr($deviceId, 0, 64),
                     mb_substr((string) ($result['error'] ?? 'The handset could not send it.'), 0, 255),
                     $id,
+                    mb_substr($deviceId, 0, 64),
                 ]
             );
-            $failed++;
+            if ($updated->rowCount() === 1) $failed++; else $ignored++;
         }
     }
 

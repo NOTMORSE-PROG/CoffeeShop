@@ -159,12 +159,19 @@ Authorization: Bearer <token>
 }
 ```
 
-Numbers come back in `639XXXXXXXXX` form, ready to dial. Messages are plain GSM-7 text under
+Numbers come back in `+639XXXXXXXXX` form, ready to dial. Messages are plain GSM-7 text under
 160 characters, so each is a single SMS.
 
 Pulling **claims** those messages. A second pull will not return them again, so two phones, or
-one phone retrying, cannot send the same text twice. If a claim is never confirmed it returns
-to the queue after a couple of minutes, so a phone that dies mid-send does not lose the message.
+one phone retrying, cannot claim the same text twice. If a claim is never confirmed after the
+claim timeout, it is flagged as **Handset delivery unconfirmed; check phone before resending**.
+It is never automatically handed out again: the phone may have sent it and lost the HTTP
+confirmation. Check the phone's sent history before using an explicit resend on the order.
+A late acknowledgement from the same handset can still settle the original message as sent.
+
+In a phone automation flow, clear the recipient/message variables before each collection,
+check the HTTP response succeeded, and send only once for each new `X-Sms-Id`. Keep that ID
+until the confirmation succeeds. An HTTP failure must not reuse the previous recipient or text.
 
 ### Report results
 

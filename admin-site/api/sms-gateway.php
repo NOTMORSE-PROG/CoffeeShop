@@ -176,7 +176,7 @@ if ($action === 'report') {
 // capstone team should not have to. These two actions do the same job one
 // message at a time, in a format a single "split on |" step can handle.
 if ($action === 'next') {
-    $messages = sms_claim_batch($deviceId);
+    $messages = sms_claim_batch($deviceId, 1);
 
     header('Content-Type: text/plain; charset=utf-8');
 
@@ -195,18 +195,8 @@ if ($action === 'next') {
         exit;
     }
 
-    // One message only, so the app never has to loop. The rest stay claimed
-    // and are handed back on the following poll.
+    // Claim exactly one; no other queued message is briefly reserved.
     $first = $messages[0];
-
-    // Anything beyond the first goes back on the queue immediately, rather
-    // than sitting claimed until the timeout.
-    foreach (array_slice($messages, 1) as $spare) {
-        db_query(
-            'UPDATE sms_log SET claimed_at = NULL, attempts = GREATEST(0, attempts - 1) WHERE id = ?',
-            [$spare['id']]
-        );
-    }
 
     /*
      * The same three fields also go out as headers.

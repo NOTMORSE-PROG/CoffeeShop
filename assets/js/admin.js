@@ -685,7 +685,7 @@
           labels: data.revenue.labels,
           datasets: [
             {
-              label: 'Revenue',
+              label: 'Sales',
               data: data.revenue.revenue,
               borderColor: accent,
               backgroundColor: fade(accent, 0.12),
@@ -737,8 +737,8 @@
             tooltip: {
               callbacks: {
                 label: function (context) {
-                  if (context.dataset.label === 'Revenue') {
-                    return 'Revenue: ' + money(context.parsed.y);
+                  if (context.dataset.label === 'Sales') {
+                    return 'Sales: ' + money(context.parsed.y);
                   }
                   return 'Orders: ' + context.parsed.y;
                 }
@@ -1007,19 +1007,13 @@
      body that comes back is the updated page itself - so there is no second
      copy of "what this action does" in here to drift out of step with PHP.
 
-     Without scripting, or if anything at all goes wrong, the form posts
-     normally and the page reloads exactly as it used to.                    */
+     Without scripting the form posts normally. A failed fetch reloads using
+     GET, because the original write may already have succeeded.             */
 
   (function liveActions() {
     if (!window.fetch || !window.FormData || !window.DOMParser) return;
 
     var busy = false;
-
-    // Same shadowing trap as form.action: a control named "submit" would hide
-    // the method. Going through the prototype cannot be shadowed.
-    function realSubmit(form) {
-      HTMLFormElement.prototype.submit.call(form);
-    }
 
     document.addEventListener('submit', function (event) {
       var form = event.target;
@@ -1062,7 +1056,7 @@
           // Not the shape we expected - a session that timed out and gave us
           // the sign-in page, say. Let the browser do it properly.
           if (!doc.querySelector('[data-live-region]')) {
-            realSubmit(form);
+            window.location.href = result.url || window.location.href;
             return;
           }
 
@@ -1113,7 +1107,10 @@
             });
         })
         .catch(function () {
-          realSubmit(form);
+          // The POST may already have succeeded. Replaying it can resend an
+          // SMS or repeat a stock adjustment. Reload to inspect the result.
+          if (window.OurCoffee) window.OurCoffee.toast('The result could not be loaded. Refreshing to check the saved action.', 'error');
+          window.location.reload();
         })
         .then(function () {
           busy = false;
