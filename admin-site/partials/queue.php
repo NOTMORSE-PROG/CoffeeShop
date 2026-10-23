@@ -18,10 +18,10 @@ function dashboard_stats(): array
         'SELECT COUNT(*) FROM orders WHERE DATE(placed_at) = CURDATE()'
     );
 
-    // Cancelled orders never counted as money taken.
+    // A sale is fulfilled: pending and cancelled orders are not sales.
     $todayRevenue = (float) db_value(
         "SELECT COALESCE(SUM(total), 0) FROM orders
-         WHERE DATE(placed_at) = CURDATE() AND status <> 'cancelled'"
+         WHERE DATE(COALESCE(completed_at, placed_at)) = CURDATE() AND status = 'completed'"
     );
 
     $pending = (int) db_value("SELECT COUNT(*) FROM orders WHERE status = 'pending'");

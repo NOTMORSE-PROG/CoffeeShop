@@ -55,7 +55,7 @@ $filters = $queueData['filters'];
 $queueQuery = http_build_query(array_merge($filters, ['page' => $queueData['page']]));
 $queueAction = admin_url('index.php') . '?' . $queueQuery;
 
-admin_head('Dashboard');
+admin_head('Dashboard', ['scripts' => [admin_asset('vendor/chart.min.js')]]);
 admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 18 ? 'afternoon' : 'evening'))
     . ', ' . (string) $admin['full_name'] . '.');
 ?>
@@ -68,9 +68,9 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
   </div>
 
   <div class="card stat" data-stat="today_revenue">
-    <p class="stat-label">Revenue today</p>
+    <p class="stat-label">Sales today</p>
     <p class="stat-value tabular" data-stat-value><?= peso($stats['today_revenue']) ?></p>
-    <p class="stat-note">Cancelled orders are not counted</p>
+    <p class="stat-note">Completed orders, by completion date</p>
   </div>
 
   <div class="card stat<?= $stats['pending_count'] > 0 ? ' stat-alert' : '' ?>" data-stat="pending_count">
@@ -84,6 +84,11 @@ admin_header('Dashboard', 'Good ' . (date('G') < 12 ? 'morning' : (date('G') < 1
     <p class="stat-value tabular" data-stat-value><?= (int) $stats['low_stock_count'] ?></p>
     <p class="stat-note"><a href="<?= e(admin_url('inventory.php')) ?>">Open inventory</a></p>
   </div>
+</section>
+
+<section id="dashboard-analytics" aria-label="Sales analytics">
+  <h2>Sales analytics</h2>
+  <?php require __DIR__ . '/partials/analytics.php'; ?>
 </section>
 
 <form class="card filter-bar" method="get" action="<?= e(admin_url('index.php')) ?>" data-no-guard>

@@ -163,6 +163,13 @@ under Settings.
 
 ## Managing the menu
 
+**Best Sellers.** The customer menu includes a Best Sellers collection and star badges for
+the top five products by quantity in completed orders over the last 30 days. Drinks retain
+their usual categories. The owner dashboard shows sales analytics, a daily sales table,
+and best sellers for the selected date range. Sales count completed orders by completion
+date in the shop timezone; pending and cancelled orders are excluded. Sales are order totals,
+including delivery fees, and are separate from manual payment confirmation.
+
 **Pictures.** Edit an item and upload a JPG, PNG, GIF or WebP, up to 2 MB. Square pictures look
 best. You see a preview before it is sent, and there is a tick to remove the current one.
 

@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/partials/layout.php';
+require_once __DIR__ . '/../shared/reporting.php';
 
 $closed = shop_closed_reason();
 $search = get_string('q');
@@ -32,8 +33,21 @@ $products = db_all(
     $params
 );
 
+// Best Sellers is a collection, so drinks retain their ordinary category.
+$bestRows = best_selling_products(date('Y-m-d', strtotime('-29 days')), date('Y-m-d'), 5);
+$bestIds = array_map('intval', array_column($bestRows, 'product_id'));
+$byId = array_column($products, null, 'id');
+$bestProducts = [];
+foreach ($bestIds as $id) {
+    if (isset($byId[$id]) && (int) $byId[$id]['is_available'] === 1) $bestProducts[] = $byId[$id];
+}
+
 // Group by category for rendering.
 $grouped = [];
+$grouped['best-sellers'] = [
+    'category' => ['name' => 'Best Sellers', 'slug' => 'best-sellers'],
+    'items' => $bestProducts,
+];
 foreach ($products as $product) {
     $grouped[(int) $product['category_id']]['category'] = [
         'name' => $product['category_name'],
@@ -75,7 +89,7 @@ customer_head(
       <?php endif; ?>
     </form>
 
-    <?php if ($grouped === []): ?>
+    <?php if ($products === [] && $search !== ''): ?>
       <div class="empty">
         <?= icon('search', 'icon') ?>
         <h3>Nothing matched &ldquo;<?= e($search) ?>&rdquo;</h3>
@@ -107,6 +121,13 @@ customer_head(
                 <span class="small muted"><?= count($group['items']) ?> drinks</span>
               </div>
 
+              <?php if ($group['category']['slug'] === 'best-sellers'): ?>
+                <p class="small muted">Our top 5 by items sold in completed orders over the last 30 days.</p>
+                <?php if ($bestProducts === []): ?>
+                  <p class="small muted"><?= $search !== '' ? 'No best sellers match your search.' : 'Our best sellers will appear here after completed sales.' ?></p>
+                <?php endif; ?>
+              <?php endif; ?>
+
               <div class="product-grid">
                 <?php foreach ($group['items'] as $product):
                     $available = (int) $product['is_available'] === 1;
@@ -126,6 +147,9 @@ customer_head(
                     <?php endif; ?>
 
                     <div class="product-body">
+                      <?php if (in_array((int) $product['id'], $bestIds, true)): ?>
+                        <span class="best-seller-badge"><span aria-hidden="true">&#9733;</span> Best seller</span>
+                      <?php endif; ?>
                       <p class="product-category"><?= e($product['category_name']) ?></p>
                       <h3 class="product-name">
                         <?php if ($available): ?>

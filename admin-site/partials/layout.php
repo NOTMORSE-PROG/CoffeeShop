@@ -165,7 +165,6 @@ function admin_nav_items(): array
         ['page' => 'menu.php',      'label' => 'Menu',        'icon' => 'icon-cup'],
         ['page' => 'options.php',   'label' => 'Customisation', 'icon' => 'icon-settings'],
         ['page' => 'inventory.php', 'label' => 'Inventory',   'icon' => 'icon-box'],
-        ['page' => 'analytics.php', 'label' => 'Analytics',   'icon' => 'icon-chart'],
         ['page' => 'audit.php',     'label' => 'Audit Trail', 'icon' => 'icon-shield'],
     ];
 

@@ -10,21 +10,9 @@ require_once __DIR__ . '/partials/layout.php';
 start_session();
 send_security_headers();
 require_owner();
+require_once __DIR__ . '/../shared/reporting.php';
 
-$from = get_string('from');
-$to   = get_string('to');
-
-if ($from === '' || strtotime($from) === false) {
-    $from = date('Y-m-d', strtotime('-13 days'));
-}
-
-if ($to === '' || strtotime($to) === false) {
-    $to = date('Y-m-d');
-}
-
-if (strtotime($from) > strtotime($to)) {
-    [$from, $to] = [$to, $from];
-}
+[$from, $to] = report_date_range(get_string('from'), get_string('to'));
 
 $orders = db_all(
     "SELECT o.*,
@@ -32,8 +20,8 @@ $orders = db_all(
             (SELECT GROUP_CONCAT(CONCAT(oi.quantity, 'x ', oi.product_name) SEPARATOR '; ')
              FROM order_items oi WHERE oi.order_id = o.id) AS item_list
      FROM orders o
-     WHERE o.placed_at BETWEEN ? AND ?
-     ORDER BY o.placed_at ASC, o.id ASC",
+     WHERE o.status = 'completed' AND COALESCE(o.completed_at, o.placed_at) BETWEEN ? AND ?
+     ORDER BY COALESCE(o.completed_at, o.placed_at) ASC, o.id ASC",
     [$from . ' 00:00:00', $to . ' 23:59:59']
 );
 
@@ -86,7 +74,7 @@ foreach ($orders as $order) {
         csv_cell((string) ($order['delivery_city'] ?? '')),
         (int) $order['item_count'],
         csv_cell((string) ($order['item_list'] ?? '')),
-        $order['payment_method'] === 'gcash' ? 'GCash' : 'Cash',
+        payment_method_label((string) $order['payment_method']),
         $order['payment_status'] === 'paid' ? 'Paid' : 'Unpaid',
         csv_cell((string) ($order['payment_reference'] ?? '')),
         status_label((string) $order['status'], (string) $order['order_type']),
@@ -101,7 +89,7 @@ foreach ($orders as $order) {
 
 fputcsv($out, []);
 fputcsv($out, ['Orders', count($orders)]);
-fputcsv($out, ['Revenue excluding cancelled', number_format($revenue, 2, '.', '')]);
+fputcsv($out, ['Completed sales', number_format($revenue, 2, '.', '')]);
 fputcsv($out, ['Range', $from . ' to ' . $to]);
 fputcsv($out, ['Exported', date('Y-m-d H:i:s')]);
 
