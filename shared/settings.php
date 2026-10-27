@@ -83,6 +83,14 @@ function shop_is_open(): bool
     $close = (string) setting('shop_close_time', '23:59');
     $now   = date('H:i');
 
+    if ($open > $close) {
+        return $now >= $open || $now <= $close;
+    }
+
+    if ($open === $close) {
+        return true;
+    }
+
     return $now >= $open && $now <= $close;
 }
 
