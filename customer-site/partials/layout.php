@@ -141,6 +141,7 @@ function customer_head(string $title, string $description = '', string $bodyClas
       <a href="<?= e(url('index.php')) ?>">Home</a>
       <a href="<?= e(url('menu.php')) ?>">Menu</a>
       <a href="<?= e(url('track.php')) ?>">Track Order</a>
+      <a href="<?= e(url('support.php')) ?>">Customer Service</a>
       <a href="<?= e(url('index.php#about')) ?>">About</a>
     </nav>
 
@@ -162,6 +163,7 @@ function customer_head(string $title, string $description = '', string $bodyClas
     <a href="<?= e(url('menu.php')) ?>">Menu</a>
     <a href="<?= e(url('cart.php')) ?>">Cart</a>
     <a href="<?= e(url('track.php')) ?>">Track Order</a>
+    <a href="<?= e(url('support.php')) ?>">Customer Service</a>
   </nav>
 </header>
 
@@ -179,11 +181,22 @@ function customer_head(string $title, string $description = '', string $bodyClas
 /** Close the page. */
 function customer_footer(): void
 {
-    $shopName = (string) setting('shop_name', APP_NAME);
-    $address  = (string) setting('shop_address', '');
-    $phone    = (string) setting('shop_phone', '');
-    $open     = (string) setting('shop_open_time', '07:00');
-    $close    = (string) setting('shop_close_time', '20:00');
+    $shopName     = (string) setting('shop_name', APP_NAME);
+    $address      = (string) setting('shop_address', '');
+    $phone        = (string) setting('shop_phone', '09380312703');
+    if ($phone === '') {
+        $phone = '09380312703';
+    }
+    $facebook     = (string) setting('shop_facebook', 'https://www.facebook.com/anthonyjohn.rivera.52');
+    if ($facebook === '') {
+        $facebook = 'https://www.facebook.com/anthonyjohn.rivera.52';
+    }
+    $facebookName = (string) setting('shop_facebook_name', 'Anthony John Rivera');
+    if ($facebookName === '') {
+        $facebookName = 'Anthony John Rivera';
+    }
+    $open         = (string) setting('shop_open_time', '07:00');
+    $close        = (string) setting('shop_close_time', '20:00');
     ?>
 </main>
 
@@ -204,8 +217,26 @@ function customer_footer(): void
           <?= e($address !== '' ? $address : 'Main Street, Mandaluyong City') ?><br>
           Open daily <?= e(date('g:i A', (int) strtotime($open))) ?>
           to <?= e(date('g:i A', (int) strtotime($close))) ?>
-          <?php if ($phone !== ''): ?><br><?= e($phone) ?><?php endif; ?>
         </p>
+      </div>
+
+      <div>
+        <h3 class="footer-heading">Customer Service</h3>
+        <ul class="footer-links footer-cs-links">
+          <li>
+            <a href="tel:<?= e(preg_replace('/[^0-9+]/', '', $phone)) ?>" class="footer-cs-link">
+              <?= icon('phone', 'icon footer-cs-icon') ?>
+              <span><?= e($phone) ?></span>
+            </a>
+          </li>
+          <li>
+            <a href="<?= e($facebook) ?>" target="_blank" rel="noopener noreferrer" class="footer-cs-link">
+              <?= icon('facebook', 'icon footer-cs-icon') ?>
+              <span><?= e($facebookName) ?></span>
+            </a>
+          </li>
+          <li><a href="<?= e(url('support.php')) ?>">Help &amp; FAQs</a></li>
+        </ul>
       </div>
 
       <div>
@@ -224,6 +255,41 @@ function customer_footer(): void
     </p>
   </div>
 </footer>
+
+<!-- Floating Customer Service Widget -->
+<div class="cs-fab-container">
+  <div class="cs-fab-popover" id="cs-fab-popover" hidden aria-labelledby="cs-fab-title">
+    <div class="cs-fab-head">
+      <h3 id="cs-fab-title" class="cs-fab-heading"><?= icon('headset', 'icon cs-fab-head-icon') ?> Customer Service</h3>
+      <button type="button" class="cs-fab-close" id="cs-fab-close" aria-label="Close customer service card">&times;</button>
+    </div>
+    <p class="cs-fab-sub">Need help with your order? Reach out to us directly:</p>
+    <div class="cs-fab-actions">
+      <a class="cs-fab-action cs-fab-phone" href="tel:<?= e(preg_replace('/[^0-9+]/', '', $phone)) ?>">
+        <?= icon('phone') ?>
+        <div>
+          <span class="cs-fab-action-label">Call or SMS</span>
+          <span class="cs-fab-action-val"><?= e($phone) ?></span>
+        </div>
+      </a>
+      <a class="cs-fab-action cs-fab-fb" href="<?= e($facebook) ?>" target="_blank" rel="noopener noreferrer">
+        <?= icon('facebook') ?>
+        <div>
+          <span class="cs-fab-action-label">Chat on Facebook</span>
+          <span class="cs-fab-action-val"><?= e($facebookName) ?></span>
+        </div>
+      </a>
+    </div>
+    <div class="cs-fab-foot">
+      <a href="<?= e(url('support.php')) ?>" class="cs-fab-page-link">Help &amp; Customer Service page &rarr;</a>
+    </div>
+  </div>
+
+  <button type="button" class="cs-fab-btn" id="cs-fab-btn" aria-expanded="false" aria-controls="cs-fab-popover" aria-label="Customer Service">
+    <?= icon('headset', 'icon cs-fab-btn-icon') ?>
+    <span class="cs-fab-btn-label">Customer Service</span>
+  </button>
+</div>
 
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 <script src="<?= e(asset('js/customer.js')) ?>" defer></script>

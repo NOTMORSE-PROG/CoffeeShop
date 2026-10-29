@@ -20,7 +20,7 @@ $admin = current_admin();
 const SETTING_GROUPS = [
     'Shop' => [
         'blurb' => 'The name, hours and contact details customers see.',
-        'keys'  => ['shop_name', 'shop_tagline', 'shop_phone', 'shop_address',
+        'keys'  => ['shop_name', 'shop_tagline', 'shop_phone', 'shop_facebook', 'shop_facebook_name', 'shop_address',
                     'shop_open_time', 'shop_close_time', 'accepting_orders', 'low_stock_alert'],
     ],
     'Ordering & Delivery' => [
@@ -88,7 +88,9 @@ const SETTING_BOOLEANS = [
 const SETTING_LABELS = [
     'shop_name'               => 'Shop name',
     'shop_tagline'            => 'Tagline',
-    'shop_phone'              => 'Contact number',
+    'shop_phone'              => 'Customer service phone',
+    'shop_facebook'           => 'Customer service Facebook link',
+    'shop_facebook_name'      => 'Customer service contact name',
     'shop_address'            => 'Address',
     'shop_open_time'          => 'Opens at',
     'shop_close_time'         => 'Closes at',

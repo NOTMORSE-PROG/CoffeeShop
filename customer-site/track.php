@@ -213,6 +213,23 @@ customer_head('Track Order', 'Check the status of your order at Our Coffee Shop.
         </div>
       </div>
 
+      <div class="card card-pad mb-6 support-callout">
+        <div class="support-callout-inner">
+          <div class="support-callout-text">
+            <h3 class="h-title mb-1">Need help with this order?</h3>
+            <p class="small muted mb-0">Contact customer service for real-time order inquiries or special requests.</p>
+          </div>
+          <div class="support-callout-actions">
+            <a class="btn btn-sm btn-secondary" href="tel:<?= e(preg_replace('/[^0-9+]/', '', (string) setting('shop_phone', '09380312703'))) ?>">
+              <?= icon('phone') ?> <?= e((string) setting('shop_phone', '09380312703')) ?>
+            </a>
+            <a class="btn btn-sm btn-secondary" href="<?= e((string) setting('shop_facebook', 'https://www.facebook.com/anthonyjohn.rivera.52')) ?>" target="_blank" rel="noopener noreferrer">
+              <?= icon('facebook') ?> <?= e((string) setting('shop_facebook_name', 'Anthony John Rivera')) ?>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <p class="pb-6 center">
         <a class="btn btn-secondary" href="<?= e(url('track.php')) ?>">Track another order</a>
         <a class="btn" href="<?= e(url('menu.php')) ?>">Order again</a>

@@ -276,4 +276,49 @@
     });
   })();
 
+  /* --- Floating Customer Service button toggle ------------------------------- */
+  var fabBtn = document.getElementById('cs-fab-btn');
+  var fabPopover = document.getElementById('cs-fab-popover');
+  var fabClose = document.getElementById('cs-fab-close');
+
+  if (fabBtn && fabPopover) {
+    var togglePopover = function (open) {
+      if (typeof open !== 'boolean') {
+        open = fabPopover.hasAttribute('hidden');
+      }
+      if (open) {
+        fabPopover.removeAttribute('hidden');
+      } else {
+        fabPopover.setAttribute('hidden', '');
+      }
+      fabBtn.setAttribute('aria-expanded', String(open));
+    };
+
+    fabBtn.addEventListener('click', function (event) {
+      event.preventDefault();
+      togglePopover();
+    });
+
+    if (fabClose) {
+      fabClose.addEventListener('click', function () {
+        togglePopover(false);
+      });
+    }
+
+    document.addEventListener('click', function (event) {
+      if (fabPopover.hasAttribute('hidden')) return;
+      var container = fabBtn.closest('.cs-fab-container');
+      if (container && !container.contains(event.target)) {
+        togglePopover(false);
+      }
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !fabPopover.hasAttribute('hidden')) {
+        togglePopover(false);
+        fabBtn.focus();
+      }
+    });
+  }
+
 })();

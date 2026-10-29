@@ -834,7 +834,7 @@ h2 > .order-ref {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr));
   gap: var(--space-6);
   margin-bottom: var(--space-6);
 }
@@ -856,6 +856,33 @@ h2 > .order-ref {
 .footer-links a { font-size: var(--text-sm); color: var(--text-secondary); text-decoration: none; }
 .footer-links a:hover { color: var(--accent); }
 
+.footer-cs-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.footer-cs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  transition: color var(--transition);
+}
+
+.footer-cs-link:hover {
+  color: var(--accent);
+}
+
+.footer-cs-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
 .footer-legal {
   padding-top: var(--space-5);
   border-top: 1px solid var(--border);
@@ -863,7 +890,11 @@ h2 > .order-ref {
   margin: 0;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
+  .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+}
+
+@media (max-width: 580px) {
   .footer-grid { grid-template-columns: 1fr; gap: var(--space-5); }
 }
 
@@ -1003,3 +1034,304 @@ h2 > .order-ref {
 
 /* The icon beside the hint text sits on the text baseline, not the badge. */
 .qr-zoom-hint .icon { vertical-align: -0.2em; }
+
+/* --- Floating Customer Service Widget ------------------------------------------ */
+.cs-fab-container {
+  position: fixed;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.cs-fab-container > * {
+  pointer-events: auto;
+}
+
+.cs-fab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.65rem 1.1rem;
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(196, 27, 27, 0.35);
+  transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.cs-fab-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(196, 27, 27, 0.45);
+}
+
+.cs-fab-btn-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.cs-fab-popover {
+  width: min(20rem, calc(100vw - 2rem));
+  margin-bottom: var(--space-3);
+  padding: var(--space-4);
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 25px rgba(32, 23, 19, 0.15);
+  animation: cs-fade-in 0.2s ease;
+}
+
+@keyframes cs-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cs-fab-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.cs-fab-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.cs-fab-head-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--accent);
+}
+
+.cs-fab-close {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+}
+
+.cs-fab-close:hover {
+  color: var(--text-primary);
+}
+
+.cs-fab-sub {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-3) 0;
+  line-height: 1.4;
+}
+
+.cs-fab-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cs-fab-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--cream-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.cs-fab-action:hover {
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.cs-fab-action .icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.cs-fab-action-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.cs-fab-action-val {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.cs-fab-foot {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.cs-fab-page-link {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.cs-fab-page-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .cs-fab-container {
+    right: var(--space-4);
+    bottom: var(--space-4);
+  }
+  .cs-fab-btn {
+    padding: 0.6rem 0.9rem;
+    font-size: var(--text-xs);
+  }
+}
+
+/* --- Support & Customer Service Page ------------------------------------------- */
+.support-channels-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+@media (max-width: 720px) {
+  .support-channels-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.support-channel-card {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+@media (max-width: 480px) {
+  .support-channel-card {
+    flex-direction: column;
+  }
+}
+
+.support-channel-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.support-channel-icon-wrap.fb-accent {
+  background: #eef2ff;
+  color: #1877f2;
+}
+
+.support-channel-body {
+  flex: 1;
+}
+
+.support-channel-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: var(--space-1);
+}
+
+.support-services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+@media (max-width: 840px) {
+  .support-services-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.support-service-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.support-mini-icon {
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+}
+
+.support-mini-icon .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.faq-card {
+  background: var(--card-bg, #ffffff);
+}
+
+.faq-item + .faq-item {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.faq-question {
+  font-size: var(--text-md);
+  margin-bottom: var(--space-2);
+}
+
+/* --- Support callout (Order Confirmation & Track Order) ----------------------- */
+.support-callout {
+  background: var(--cream-100);
+  border: 1px solid var(--border);
+}
+
+.support-callout-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.support-callout-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

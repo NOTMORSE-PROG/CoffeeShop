@@ -17,7 +17,9 @@ USE `our_coffee_shop`;
 INSERT INTO `settings` (`key`, `value`, `description`) VALUES
   ('shop_name',            'Our Coffee Shop',        'The name shown to customers on both sites.'),
   ('shop_tagline',         'coffee is always a good idea', 'The line under the heading on the home page.'),
-  ('shop_phone',           '',                       'Contact number shown to customers'),
+  ('shop_phone',           '09380312703',            'Contact number shown to customers for support'),
+  ('shop_facebook',        'https://www.facebook.com/anthonyjohn.rivera.52', 'Customer service Facebook link'),
+  ('shop_facebook_name',   'Anthony John Rivera',    'Customer service Facebook contact name'),
   ('shop_address',         'Main Street, Mandaluyong City', 'The address shown to customers.'),
   ('shop_open_time',       '07:00',                  'When the shop starts taking orders for the day.'),
   ('shop_close_time',      '20:00',                  'When the shop stops taking orders for the day.'),
